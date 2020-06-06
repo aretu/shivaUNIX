@@ -1,3 +1,10 @@
+% Created by:
+% ----------------------------------------------------------------------- %
+%   Author:  Elena Spagnuolo                                              %
+%   Date:    2012                                                         %
+%   E-mail:                                                               %
+% ----------------------------------------------------------------------- %
+
 function T=Tmeas(X) %X=mcV
 
 
@@ -24,7 +31,7 @@ T2=b0+b1.*X+b2.*(X.^2)+b3.*(X.^3)+b4*(X.^4)+b5*(X.^5)+b6*(X.^6)+0*(X.^7)+0*X.^8;
 T=size(T1);
 %T=T1;
 I=find(T1<1000); if ~isempty(I);  T(I)=T1(I); end
-I=find(T2>=1000); if ~isempty(I); T(I)=T2(I); end 
+I=find(T2>=1000); if ~isempty(I); T(I)=T2(I); end
 %I=find(T<0); %offset
 J=find(min(T));
 T=T-T(J);

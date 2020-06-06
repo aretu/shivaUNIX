@@ -1,3 +1,10 @@
+% Created by:
+% ----------------------------------------------------------------------- % 
+%   Author:  Elena Spagnuolo                                              %
+%   Date:    2012                                                         %
+%   E-mail:                                                               %
+% ----------------------------------------------------------------------- %
+
 %cp Rho Kappa (thermal diffusivity)
 %cp=J/Kg°K--> 1J=0.239*cal; %key= (m^2/s) %rho=Kg/m^3
 %carbonates
