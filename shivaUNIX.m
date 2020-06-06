@@ -44,6 +44,7 @@ end
 
 format('long')
 % End initialization code - DO NOT EDIT
+end
 
 % --- Executes just before shivaUNIX is made visible.
 function shivaUNIX_OpeningFcn(hObject, eventdata, handles, varargin)
@@ -73,7 +74,7 @@ guidata(hObject, handles);
 
 % UIWAIT makes shivaUNIX wait for user response (see UIRESUME)
 % uiwait(handles.figure1);
-
+end
 
 % --- Outputs from this function are returned to the command line.
 function varargout = shivaUNIX_OutputFcn(hObject, eventdata, handles)
@@ -84,6 +85,7 @@ function varargout = shivaUNIX_OutputFcn(hObject, eventdata, handles)
 
 % Get default command line output from handles structure
 varargout{1} = handles.output;
+end
 
 % --- Executes on button press in pushbutton1.
 function pushbutton1_Callback(hObject, eventdata, handles)
@@ -105,6 +107,7 @@ switch popup_sel_index
         plot(membrane);
     case 5
         surf(peaks);
+end
 end
 
 
@@ -187,6 +190,7 @@ eval(['fprintf(fid,''' C1 ''',' N1 ');'])
 end
 fclose(fid);
 if ~ strcmp(fieldnames(handles),'dt'); msgbox(['ATTENTION: handles.dt=none']); end
+end
 
 %% OPEN --------------------------------------------------------------------
 function OpenMenuItem_Callback(hObject, eventdata, handles)
@@ -265,7 +269,7 @@ fid=fopen(FileName,'r');
     for i=1:b
     A=fscanf(fid,'%s',1);
     %controlla che non interpreti uno spazio come nuova variabile
-        if any(strcmp(fieldnames(handles),'column')) & ...
+        if any(strcmp(fieldnames(handles),'column')) && ...
                 strcmp(A,2); handles.column{i-1}={[char(handles.column(i-1)), '2']}; 
         else handles.column(i)={A};
         end
@@ -321,7 +325,7 @@ num=length(handles.column);
 
 for n=2:num
 test=double(handles.column{n});   
-if any(test==32); I=find(test~=32); handles.column{n}=char(test(I)); end
+if any(test==32); handles.column{n}=char(test(test~=32)); end
 eval(['handles.' handles.column{n} ' = file1.data(ll:nn,' num2str(n) ');'])
 end
 
@@ -349,12 +353,13 @@ handles.Time(2:end)=hv*handles.Stamp(1) +cumsum(handles.Stamp(2:end)); %plotto i
 
 handles.Done=[];
 
-
+handles.tconv = 1000; %<--- Corrections for time conversion in velocity calculation!
 
 guidata(hObject, handles);
 handles.zoom=0;
 
 plotta_ora(handles);
+end
 
 function OpenMenuItem2_Callback(hObject, eventdata, handles)
 % hObject    handle to OpenMenuItem2 (see GCBO)
@@ -407,7 +412,7 @@ ax_=findobj('Tag','edit2'); set(ax_,'String',handles.g2);
 ax_=findobj('Tag','edit3'); set(ax_,'String',handles.g3); 
 
 [FileName,PathName] = uigetfile('*.*','All Files (*.*)', ...
-    'C:\Users\stear\Dropbox\Ricerca\SHIVA');
+    '~/Documents/Roma/Raw lab data');
 
 
 cd (PathName)
@@ -423,8 +428,8 @@ fclose(fid);
 
 
 %file0=importdata(FileName,'\t',3);file1=char(file0(3,:));
-[I]=find(file1==char(44)); change=logical(0);
-if ~isempty(I); file1(I)=char(46); change=logical(1); end
+[I]=find(file1==char(44)); change=false;
+if ~isempty(I); file1(I)=char(46); change=true; end
 A=sscanf(file1,'%f');
 b=length(A); clear A
 fid=fopen(FileName,'r');
@@ -432,9 +437,10 @@ fid=fopen(FileName,'r');
     for i=1:b
     A=fscanf(fid,'%s',1);
     %controlla che non interpreti uno spazio come nuova variabile
-        if any(strcmp(fieldnames(handles),'column')) & ...
-                strcmp(A,2); handles.column{i-1}={[char(handles.column(i-1)), '2']}; 
-        else handles.column(i)={A};
+        if any(strcmp(fieldnames(handles),'column')) && ...
+                strcmp(A,2); handles.column{i-1}={[char(handles.column(i-1)), '2']};
+        else
+            handles.column(i)={A};
         end
         %controlla che non ce ne siano due uguali
         S=sum(strcmp(handles.column(i), handles.column));
@@ -447,7 +453,7 @@ fid=fopen(FileName,'r');
     while 1
        i=i+1;
        tline = fgetl(fid);
-            if ~ischar(tline), break, end
+            if ~ischar(tline); break; end
             [I]=find(tline==char(44));
             if ~isempty(I); tline(I)=char(46); end
             file1.data(i,:)=sscanf(tline,'%f');
@@ -477,7 +483,16 @@ handles.loadT=0;
 handles.shearT=0;
 ll=1;
 nn=length(file1.data(:,1));
-
+timess = file1.data(:,1);
+if max(timess)>60 || min(timess)>0.7
+    disp('Time is in Milliseconds')
+    tconv = 1;
+elseif max(timess)<60 || min(timess)<0.7
+    disp('Time is in seconds')
+    tconv = 1000;
+else 
+    disp('Unable to ascertain time units')
+end
 %primo step:togliere tutto quello che ha un campionamento diverso da dt
 %handles.xlab=0:handles.dt:(length(file1.data)-1)*handles.dt;
 %memorizza anche gli originali
@@ -489,26 +504,27 @@ handles.column{1}='Time';
 num=length(handles.column);
 
 for n=2:num
-test=double(handles.column{n});   
-if any(test==32); I=find(test~=32); handles.column{n}=char(test(I)); end
-eval(['handles.' handles.column{n} ' = file1.data(ll:nn,' num2str(n) ');'])
+    test=double(handles.column{n});   
+    if any(test==32)
+        handles.column{n}=char(test(test~=32)); 
+    end
+    eval(strcat('handles.',handles.column{n}, '= file1.data(ll:nn,', num2str(n), ');'))
 end
 
+
+
 handles.column{num+1}='Stamp';
-eval(['handles.' handles.column{num+1} '= file1.data(ll:nn,1); '])
+eval(['handles.' handles.column{num+1} '= file1.data(ll:nn,1);'])
 
 num=length(handles.column);
 handles.column{num+1}='Rate';
-eval(['handles.' handles.column{num+1} '= [1:1:length(file1.data(ll:nn,1))]''; '])
-
+eval(['handles.' handles.column{num+1} '= [1:1:length(file1.data(ll:nn,1))]''; ']) 
 
 num=length(handles.column);
 handles.column{num+1}='RateZero';
 eval(['handles.' handles.column{num+1} '= [1:1:length(file1.data(ll:nn,1))]''; '])
 
 % --> ele
-
-
 hv=get(handles.XLab(1),'Value');
 handles.TimeZero=cumsum(handles.Stamp);
 handles.Time=zeros(size(handles.Stamp));
@@ -516,13 +532,15 @@ handles.Time(1)=hv*handles.Stamp(1);
 handles.Time(2:end)=hv*handles.Stamp(1) +cumsum(handles.Stamp(2:end)); %plotto il numero di riga
 
 handles.Done=[];
-handles.Time=handles.Time*1000;
-
+handles.Time=handles.Time*tconv;
+handles.tconv=tconv;
 
 guidata(hObject, handles);
 handles.zoom=0;
 
 plotta_ora(handles);
+end
+
 
 %% --- Executes on calling function plotta_ora
 
@@ -562,6 +580,7 @@ eval(['plot(handles.X,handles.' handles.column{(handles.g3)} ',''ob'',''parent''
 legend(handles.axes3,[handles.column{handles.g3}])
 lim3=get(handles.axes3,'Ylim'); a=findobj('Tag','lim3S'); set(a,'String',lim3(:,2)); b=findobj('Tag','lim3I'); set(b,'String',lim3(:,1)); 
 if (stato ==1) ; set(handles.axes3,'XLim',[posx]); end
+end
 
 
 % --------------------------------------------------------------------
@@ -570,6 +589,7 @@ function PrintMenuItem_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 printdlg(handles.figure1)
+end
 
 % --------------------------------------------------------------------
 function CloseMenuItem_Callback(hObject, eventdata, handles)
@@ -584,6 +604,7 @@ if strcmp(selection,'No')
 end
 
 delete(handles.figure1)
+end
 
 
 % --- Executes on selection change in popupmenu1.
@@ -591,6 +612,7 @@ function popupmenu1_Callback(hObject, eventdata, handles)
 % hObject    handle to popupmenu1 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+end
 
 % Hints: contents = get(hObject,'String') returns popupmenu1 contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from popupmenu1
@@ -611,7 +633,7 @@ else
 end
 
 set(hObject, 'String', {'plot(rand(5))', 'plot(sin(1:0.01:25))', 'bar(1:.5:10)', 'plot(membrane)', 'surf(peaks)'});
-
+end
 
 
 %% --- Executes on button press in zoom.
@@ -629,6 +651,7 @@ if h_ele==1
 zoom on; 
 else
 zoom off
+end
 end
 % %zoom xon;
 % h_=findobj('Tag','XLab');
@@ -683,6 +706,7 @@ if h_ele==1
 pan on; 
 else
 pan off
+end
 end
 
 % h_=findobj('Tag','XLab');
@@ -746,6 +770,7 @@ end
 
 eval(['plot(handles.X,handles.' handles.column{(handles.g1)} ',''ob'',''parent'',handles.axes1);']); 
 legend(handles.axes1,[handles.column{handles.g1}])
+end
 
 % --- Executes during object creation, after setting all properties.
 function edit1_CreateFcn(hObject, eventdata, handles)
@@ -755,6 +780,7 @@ function edit1_CreateFcn(hObject, eventdata, handles)
 
 % Hint: edit controls usually have a white background on Windows.
 %       See ISPC and COMPUTER.
+end
 
 
 %% EDIT2
@@ -795,6 +821,8 @@ end
 
 eval(['plot(handles.X,handles.' handles.column{(handles.g2)} ',''ob'',''parent'',handles.axes2);']); 
 legend(handles.axes2,[handles.column{handles.g2}])
+end
+
 % --- Executes during object creation, after setting all properties.
 function edit2_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to edit2 (see GCBO)
@@ -805,6 +833,7 @@ function edit2_CreateFcn(hObject, eventdata, handles)
 %       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
+end
 end
 
 
@@ -848,6 +877,7 @@ elseif h_ele==1
 end
 eval(['plot(handles.X,handles.' handles.column{(handles.g3)} ',''ob'',''parent'',handles.axes3);']); 
 legend(handles.axes3,[handles.column{handles.g3}])
+end
 
 % --- Executes during object creation, after setting all properties.
 function edit3_CreateFcn(hObject, eventdata, handles)
@@ -859,6 +889,7 @@ function edit3_CreateFcn(hObject, eventdata, handles)
 %       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
+end
 end
 
 
@@ -895,6 +926,7 @@ end
 guidata(hObject, handles);
 
 plotta_ora(handles)
+end
 
 
 % --- Executes on button press in offset.
@@ -965,6 +997,7 @@ s3=str2double(get(h_,'String'));
 
 guidata(hObject, handles);
 plotta_ora(handles)
+end
 
 
 
@@ -1036,6 +1069,7 @@ set(ax_,'XData',handles.Time,'YData',dataY); set(handles.axes1,'XLim',[handles.T
 
 guidata(hObject, handles);
 plotta_ora(handles)
+end
 
 
 
@@ -1063,6 +1097,7 @@ handles.dec='ok';
 
 guidata(hObject, handles);
 plotta_ora(handles);
+end
 %set(hObject,'String','decimate','BackgroundColor',[0.75 0.75 0.75]);
 
 function decimate_CreateFcn(hObject, eventdata, handles)
@@ -1075,6 +1110,7 @@ function decimate_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor',[0.75 0.75 0.75]);
     waitfor(hObject,'String')
+end
 end
 
 %% --- Executes on button press in smooth
@@ -1144,6 +1180,7 @@ h_=findobj('Tag','edit3LB'); set(h_,'String',handles.column);
 guidata(hObject, handles);
 
 plotta_ora(handles);
+end
 
 % --- Executes during object creation, after setting all properties.
 function smooth_CreateFcn(hObject, eventdata, handles)
@@ -1155,6 +1192,7 @@ function smooth_CreateFcn(hObject, eventdata, handles)
 %       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
+end
 end
 
 %% --- Executes on button press in cut_dt
@@ -1191,6 +1229,7 @@ handles.dt=str2double(get(hObject,'String'));
 set(hObject,'String','cut_dt')
 guidata(hObject, handles);
 plotta_ora(handles)
+end
 
 % --- Executes during object creation, after setting all properties.
 function cut_dt_CreateFcn(hObject, eventdata, handles)
@@ -1202,6 +1241,7 @@ function cut_dt_CreateFcn(hObject, eventdata, handles)
 %       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
+end
 end
 
 
@@ -1245,6 +1285,7 @@ end
 
 guidata(hObject, handles);
 plotta_ora(handles)
+end
 
 
 
@@ -1309,7 +1350,7 @@ plot(1./f*1000/dt,Pyy(1:nfft/2+1),'Parent',handles.axes5);
 set(handles.axes5,'XLim',[0 500])
 
 set(hObject,'Value',0)
-
+end
 %eval(['plot(handles.Timestamp,handles.' handles.column{s} ...
 %    ',''ob'',''parent'',handles.axes' num2str(finestra) ');']); 
 %eval(['legend(handles.axes' num2str(finestra) ... 
@@ -1366,6 +1407,7 @@ nome2=[nome, 'RED.mat'];
 
 
 eval(['save(nome2,''-struct'',''handles'',' M1 ');'])
+end
 %eval(['save(nome3,''-struct'',''handles'',' O1 ');'])
 %save('parametri','-struct','handles','loadT','shearT','triggered','cutted'
 %,'dt','sm')
@@ -1376,6 +1418,7 @@ function File_Callback(hObject, eventdata, handles)
 % hObject    handle to File (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+end
 
 
 
@@ -1387,6 +1430,7 @@ function Interactive_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 keyboard
 return
+end
 
 
 
@@ -1445,7 +1489,7 @@ end
 if contents==10; cal.tHG=0; cal.tLG=0.736e6; fref=125; end
 if contents==11; cal.tHG=0; cal.tLG=0.736e6; fref=125; end
 if contents==11; cal.tHG=0; cal.tLG=0.736e6; fref=125; end
-if contents==12; cal.tHG=0; cal.tLG=0.736e6; fref=100; cal.enc(1)=4/3*pi*(rext^2+rint*rext+rint^2)/(rext+rint)/100;
+if contents==12; cal.tHG=0; cal.tLG=0.736e6; fref=100; cal.enc(1)=4/3*pi*(rext^2+rint*rext+rint^2)/(rext+rint)*10;
 end
 
 cal.tSG=17.19E6;
@@ -1508,7 +1552,7 @@ for j=1:length(n);
                 eval(['new.InternalPressure=handles.' handles.column{n(j)} '*cal.cosino(1)+cal.cosino(2);'])
             case 3
                 disp('thermocouple')
-                eval(['new.InternalTemperature=calibrate_temperature_fx(100,handles.' handles.column{n(j)} ',[],[]);'])
+                eval(['new.InternalTemperature=calibrate_temperature_fx(120,handles.' handles.column{n(j)} ',[],[]);'])
                     %output=calibrate_temperature_fx(gain,input_hj,input_cj,compensation)
             case 4
                 disp('ceriani')
@@ -1657,8 +1701,15 @@ b=(strfind(handles.column,'Encoder')); j=0; n=[];
 for i=1:length(b); if ~isempty(b{i}); j=j+1; n(j)=i; end; end
 for j=1:length(n); 
 clear d0 d1 d2 v vel
-eval(['d0=handles.' handles.column{n(j)} ';'])
-
+eval(['d0=handles.' handles.column{n(j)} ';']) %d0 is the initial, raw encoder data
+Dd0 = diff(d0);
+Dd0(Dd0 == 0) = [];
+min(Dd0)
+if abs(min(Dd0)) < 1/4000
+    disp('Fine encoder')
+else
+    disp('Coarse encoder')
+end
 h_ele=handles.Stamp/1000;
 % qui provo a ridurre il problema del cambiamento in corsa di acq xlab.
 % per rirpistinare la versione di shivaUNIX precedente imposta I_ele=[] e commenta la riga di seguito.
@@ -1668,7 +1719,7 @@ I_ele=find(diff(h_ele)<mode(diff(h_ele)));
 testE=2; 
 
 %=== se necessario aggiustare il rate
-if ~isempty(I_ele) & f_ele==1
+if ~isempty(I_ele) && f_ele==1
     testE=1; Fs=[];
     sl_ele=d0; 
     I_range=[I_ele: I_ele+1];
@@ -1676,9 +1727,10 @@ if ~isempty(I_ele) & f_ele==1
     I_inter=[I_ele:I_ele+10];
     cv=fit(handles.Time(I_fit)/1000, sl_ele(I_fit),'linear');
     deltaslip=sl_ele(I_ele+1) - cv(handles.Time(I_ele+1)/1000); 
-    sl_ele(I_ele+1:end)=sl_ele(I_ele+1:end) - deltaslip(1);
+    sl_ele(I_ele+1:end)=sl_ele(I_ele+1:end)/1000 - deltaslip(1);
     d0=sl_ele;
 end
+
 
 %che i massimi siano fuori dal rumore
 J=local_max(d0); I=[];
@@ -1705,14 +1757,15 @@ end
 end
 end %if fOV
 
-I=find(d0<0);
-d0(I)=0;
+d0(d0<0)=0;
 
     ITorq=findobj('Tag','Torque');
     ITorqO=get(ITorq,'Value');
 
 h=handles.Stamp/1000;
 d1=d0*cal.enc(1);
+% figure(22)
+plot(d1)
 if ITorqO==0
     fcamp=(1./max(1/fref,h));
     Fs=max(fcamp);
@@ -1761,7 +1814,7 @@ end
 % else
 bb=zeros(size(d_sm));
 bb=diff(d_sm); bb(end+1)=bb(end);
-v=bb./h;
+v=(bb./h)./handles.tconv;
 % end
 
 eval(['new.SlipVel_Enc_' num2str(j) '=v;']);
@@ -1918,14 +1971,12 @@ dn=50;
 time2=cumsum(handles.Stamp);
 
 if any(strcmp(fieldnames(new),'vel'))
-[Temp]=temp(handles.Time/1000,new.vel,new.shear1,new.slip, dn); %change for vel
+    [Temp]=temp(handles.Time/1000,new.vel,new.shear1,new.slip, dn); %change for vel
 
+elseif max(new.vel) <= 20e-3
+    [Temp]=temp(handles.Time/1000,new.SlipVel_Enc_1,new.shear1,new.Slip_Enc_1,dn);
 else
-     if max(new.vel) <= 20e-3
-[Temp]=temp(handles.Time/1000,new.SlipVel_Enc_1,new.shear1,new.Slip_Enc_1,dn);
-     else
-[Temp]=temp(handles.Time/1000,new.SlipVel_Enc_2,new.shear1,new.Slip_Enc_2,dn); %change for vel
-     end
+    [Temp]=temp(handles.Time/1000,new.SlipVel_Enc_2,new.shear1,new.Slip_Enc_2,dn); %change for vel
 end
 new.TempE=interp1(time2(1:dn:end),Temp,time2);
    
@@ -2108,6 +2159,7 @@ handles.Done=1;
 handles.new=fieldnames(new)';
 guidata(hObject, handles);
 plotta_ora(handles)
+end
 
 
 %% definisce il diametro interno ed esterno
@@ -2115,6 +2167,7 @@ function Rint_Callback(hObject, eventdata, handles)
 % hObject    handle to Rint (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+end
 
 % Hints: get(hObject,'String') returns contents of Rint as text
 %        str2double(get(hObject,'String')) returns contents of Rint as a double
@@ -2130,6 +2183,7 @@ function Rint_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+end
 
 function Rext_Callback(hObject, eventdata, handles)
 % hObject    handle to Rext (see GCBO)
@@ -2138,6 +2192,7 @@ function Rext_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of Rext as text
 %        str2double(get(hObject,'String')) returns contents of Rext as a double
+end
 
 
 % --- Executes during object creation, after setting all properties.
@@ -2151,7 +2206,7 @@ function Rext_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
+end
 
 
 
@@ -2228,6 +2283,7 @@ guidata(hObject, handles);
 
    end
 end % switch
+end
 
 %%%%%%%%%%% fine GEF
 
@@ -2282,7 +2338,7 @@ set(ax_,'Xlim',posx)
 
 guidata(hObject, handles);
 plotta_ora(handles)
-
+end
 
 
 % --- Executes on button press in fluid.
@@ -2292,7 +2348,7 @@ function fluid_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of fluid
-
+end
 
 
 % --------------------------------------------------------------------
@@ -2313,7 +2369,7 @@ hnl_=get(hn_,'YLabel'); set(hnl_,'string',nom)
 hn_=copyobj(handles.axes3,hf); h1=get(hn_,'Position'); h1(1)=h1(1)+0.1; set(hn_,'Position',h1);
 ah_=get(handles.axes3,'children'); nom=get(ah_,'DisplayName'); 
 hnl_=get(hn_,'YLabel'); set(hnl_,'string',nom)
-
+end
 
 %ax_=get(handles.axes1,'Parent');
 %ah_=get(ax_,'Children')
@@ -2395,6 +2451,7 @@ end %if button
 guidata(hObject, handles);
 
 plotta_ora(handles)
+end
 
 
 
@@ -2417,6 +2474,7 @@ set(h,'String',s);
 guidata(hObject, handles);
 
 plotta_ora(handles)
+end
 
 
 
@@ -2430,6 +2488,7 @@ function edit1LB_CreateFcn(hObject, eventdata, handles)
 %       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
+end
 end
 
 
@@ -2452,6 +2511,7 @@ set(h,'String',s);
 guidata(hObject, handles);
 
 plotta_ora(handles)
+end
 
 
 % --- Executes during object creation, after setting all properties.
@@ -2464,6 +2524,7 @@ function edit2LB_CreateFcn(hObject, eventdata, handles)
 %       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
+end
 end
 
 
@@ -2485,6 +2546,7 @@ set(h,'String',s);
 guidata(hObject, handles);
 
 plotta_ora(handles)
+end
 
 
 
@@ -2499,6 +2561,7 @@ function edit3LB_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+end
 
 
 
@@ -2510,7 +2573,7 @@ function Figure_Callback(hObject, eventdata, handles)
 % hObject    handle to Figure (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-
+end
 
 %% LOAD --------------------------------------------------------------------
 function Load_Callback(hObject, eventdata, handles)
@@ -2610,6 +2673,7 @@ guidata(hObject, new);
 handles.zoom=0;
 
 plotta_ora(handles);
+end
 
 
 
@@ -2684,6 +2748,7 @@ eval(['fprintf(fid,''' C1 ''',' N1 ');'])
 end
 fclose(fid);
 if ~ strcmp(fieldnames(handles),'dt'); msgbox(['ATTENTION: handles.dt=none']); end
+end
 
 
 
@@ -2694,7 +2759,7 @@ function slipON_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of slipON
-
+end
 
 
 
@@ -2706,7 +2771,7 @@ function GH_Callback(hObject, eventdata, handles)
 
 % Hint: get(hObject,'Value') returns toggle state of GH
 
-
+end
 
 
 % --- Executes on button press in TC.
@@ -2716,7 +2781,7 @@ function TC_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of TC
-
+end
 
 
 
@@ -2787,7 +2852,7 @@ eval(['save(nome2,''-struct'',''handles'',' M1 ');'])
 %eval(['save(nome3,''-struct'',''handles'',' O1 ');'])
 %save('parametri','-struct','handles','loadT','shearT','triggered','cutted'
 %,'dt','sm')
-
+end
 
 
 
@@ -2798,7 +2863,7 @@ function nodeEnc1_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of nodeEnc1 as text
 %        str2double(get(hObject,'String')) returns contents of nodeEnc1 as a double
-
+end
 
 % --- Executes during object creation, after setting all properties.
 function nodeEnc1_CreateFcn(hObject, eventdata, handles)
@@ -2811,7 +2876,7 @@ function nodeEnc1_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
+end
 
 
 function MaxEnc_Callback(hObject, eventdata, handles)
@@ -2821,7 +2886,7 @@ function MaxEnc_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of MaxEnc as text
 %        str2double(get(hObject,'String')) returns contents of MaxEnc as a double
-
+end
 
 % --- Executes during object creation, after setting all properties.
 function MaxEnc_CreateFcn(hObject, eventdata, handles)
@@ -2834,7 +2899,7 @@ function MaxEnc_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
+end
 
 
 function nodeEnc2_Callback(hObject, eventdata, handles)
@@ -2844,7 +2909,7 @@ function nodeEnc2_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of nodeEnc2 as text
 %        str2double(get(hObject,'String')) returns contents of nodeEnc2 as a double
-
+end
 
 % --- Executes during object creation, after setting all properties.
 function nodeEnc2_CreateFcn(hObject, eventdata, handles)
@@ -2857,6 +2922,7 @@ function nodeEnc2_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+end
 
 function T0_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to edit13 (see GCBO)
@@ -2868,6 +2934,7 @@ function T0_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+end
 
 function T0_Callback(hObject, eventdata, handles)
 % hObject    handle to TT (see GCBO)
@@ -2876,7 +2943,7 @@ function T0_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of TT as text
 %        str2double(get(hObject,'String')) returns contents of TT as a double
-
+end
 
 % --- Executes during object creation, after setting all properties.
 function TT_CreateFcn(hObject, eventdata, handles)
@@ -2889,7 +2956,7 @@ function TT_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
+end
 
 % --- Executes on button press in AdjRate.
 function AdjRate_Callback(hObject, eventdata, handles)
@@ -2898,7 +2965,7 @@ function AdjRate_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of AdjRate
-
+end
 
 % --- Executes on button press in Torque.
 function Torque_Callback(hObject, eventdata, handles)
@@ -2907,7 +2974,7 @@ function Torque_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of Torque
-
+end
 
 % --- Executes on button press in off_enc_0.
 function off_enc_0_Callback(hObject, eventdata, handles)
@@ -2920,14 +2987,14 @@ I=handles.triggered;
 handles.Encoder2(1:I)=0;
 handles.Encoder(1:I)=0;
 guidata(hObject, handles);
-
+end
 
 % --- Executes on button press in incremental.
 function incremental_Callback(hObject, eventdata, handles)
 % hObject    handle to incremental (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-
+end
 
 % --- Executes on button press in vac.
 function vac_Callback(hObject, eventdata, handles)
@@ -2936,7 +3003,7 @@ function vac_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of vac
-
+end
 
 % --- Executes on button press in thick.
 function thick_Callback(hObject, eventdata, handles)
@@ -2945,7 +3012,7 @@ function thick_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of thick
-
+end
 
 
 function thickz_Callback(hObject, eventdata, handles)
@@ -2955,7 +3022,7 @@ function thickz_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of thickz as text
 %        str2double(get(hObject,'String')) returns contents of thickz as a double
-
+end
 
 % --- Executes during object creation, after setting all properties.
 function thickz_CreateFcn(hObject, eventdata, handles)
@@ -2968,7 +3035,7 @@ function thickz_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
+end
 
 
 
@@ -3000,7 +3067,7 @@ function popupAI6_Callback(hObject, eventdata, handles)
 
 % Hints: contents = cellstr(get(hObject,'String')) returns popupAI6 contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from popupAI6
-
+end
 
 % --- Executes during object creation, after setting all properties.
 function popupAI6_CreateFcn(hObject, eventdata, handles)
@@ -3013,7 +3080,7 @@ function popupAI6_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
+end
 
 % --- Executes on selection change in popupAI7.
 function popupAI7_Callback(hObject, eventdata, handles)
@@ -3023,7 +3090,7 @@ function popupAI7_Callback(hObject, eventdata, handles)
 
 % Hints: contents = cellstr(get(hObject,'String')) returns popupAI7 contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from popupAI7
-
+end
 
 % --- Executes during object creation, after setting all properties.
 function popupAI7_CreateFcn(hObject, eventdata, handles)
@@ -3036,7 +3103,7 @@ function popupAI7_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
+end
 
 % --- Executes on selection change in popupAI8.
 function popupAI8_Callback(hObject, eventdata, handles)
@@ -3046,7 +3113,7 @@ function popupAI8_Callback(hObject, eventdata, handles)
 
 % Hints: contents = cellstr(get(hObject,'String')) returns popupAI8 contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from popupAI8
-
+end
 
 % --- Executes during object creation, after setting all properties.
 function popupAI8_CreateFcn(hObject, eventdata, handles)
@@ -3059,7 +3126,7 @@ function popupAI8_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
+end
 
 % --- Executes on selection change in popupAI9.
 function popupAI9_Callback(hObject, eventdata, handles)
@@ -3069,7 +3136,7 @@ function popupAI9_Callback(hObject, eventdata, handles)
 
 % Hints: contents = cellstr(get(hObject,'String')) returns popupAI9 contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from popupAI9
-
+end
 
 % --- Executes during object creation, after setting all properties.
 function popupAI9_CreateFcn(hObject, eventdata, handles)
@@ -3082,7 +3149,7 @@ function popupAI9_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
+end
 
 % --- Executes on selection change in popupAI10.
 function popupAI10_Callback(hObject, eventdata, handles)
@@ -3092,7 +3159,7 @@ function popupAI10_Callback(hObject, eventdata, handles)
 
 % Hints: contents = cellstr(get(hObject,'String')) returns popupAI10 contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from popupAI10
-
+end
 
 % --- Executes during object creation, after setting all properties.
 function popupAI10_CreateFcn(hObject, eventdata, handles)
@@ -3105,7 +3172,7 @@ function popupAI10_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
+end
 
 % --- Executes on selection change in popupAI16.
 function popupAI16_Callback(hObject, eventdata, handles)
@@ -3115,7 +3182,7 @@ function popupAI16_Callback(hObject, eventdata, handles)
 
 % Hints: contents = cellstr(get(hObject,'String')) returns popupAI16 contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from popupAI16
-
+end
 
 % --- Executes during object creation, after setting all properties.
 function popupAI16_CreateFcn(hObject, eventdata, handles)
@@ -3128,7 +3195,7 @@ function popupAI16_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
+end
 
 % --- Executes on selection change in popupAI17.
 function popupAI17_Callback(hObject, eventdata, handles)
@@ -3138,7 +3205,7 @@ function popupAI17_Callback(hObject, eventdata, handles)
 
 % Hints: contents = cellstr(get(hObject,'String')) returns popupAI17 contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from popupAI17
-
+end
 
 % --- Executes during object creation, after setting all properties.
 function popupAI17_CreateFcn(hObject, eventdata, handles)
@@ -3151,7 +3218,7 @@ function popupAI17_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
+end
 
 % --- Executes on selection change in popupPF.
 function popupPF_Callback(hObject, eventdata, handles)
@@ -3161,7 +3228,7 @@ function popupPF_Callback(hObject, eventdata, handles)
 
 % Hints: contents = cellstr(get(hObject,'String')) returns popupPF contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from popupPF
-
+end
 
 % --- Executes during object creation, after setting all properties.
 function popupPF_CreateFcn(hObject, eventdata, handles)
@@ -3174,7 +3241,7 @@ function popupPF_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
+end
 
 % --- Executes on selection change in popupAI18.
 function popupAI18_Callback(hObject, eventdata, handles)
@@ -3184,7 +3251,7 @@ function popupAI18_Callback(hObject, eventdata, handles)
 
 % Hints: contents = cellstr(get(hObject,'String')) returns popupAI18 contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from popupAI18
-
+end
 
 % --- Executes during object creation, after setting all properties.
 function popupAI18_CreateFcn(hObject, eventdata, handles)
@@ -3197,7 +3264,7 @@ function popupAI18_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
+end
 
 % --- Executes on selection change in popupPC.
 function popupPC_Callback(hObject, eventdata, handles)
@@ -3207,7 +3274,7 @@ function popupPC_Callback(hObject, eventdata, handles)
 
 % Hints: contents = cellstr(get(hObject,'String')) returns popupPC contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from popupPC
-
+end
 
 % --- Executes during object creation, after setting all properties.
 function popupPC_CreateFcn(hObject, eventdata, handles)
@@ -3220,10 +3287,11 @@ function popupPC_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
+end
 
 % --- Executes when uipanel1 is resized.
 function uipanel1_ResizeFcn(hObject, eventdata, handles)
 % hObject    handle to uipanel1 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+end

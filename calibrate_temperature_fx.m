@@ -5,6 +5,7 @@
 
 function output=calibrate_temperature_fx(gain,input_hj,input_cj,compensation)
 
+%% CJCompensation
 if any(strcmp(compensation,{'y','yes','Y','ja','yup','ok','vabbuò'})==1); %compensation
     
     P=[-0.176004136860E-01,0.389212049750E-01,0.185587700320E-04,-0.994575928740E-07,0.318409457190E-09,-0.560728448890E-12,+0.560750590590E-15,-0.320207200030E-18,0.971511471520E-22,-0.121047212750E-25];
@@ -24,8 +25,10 @@ if any(strcmp(compensation,{'y','yes','Y','ja','yup','ok','vabbuò'})==1); %compe
 else
 end
 
-input_hj=input_hj/gain;
+%% INVERSION
+hj=input_hj/gain*1000; 
 
+% degrees C and mV
 N=0:1:9;
 D=[0.0000000E+00  0.000000E+00 -1.318058E+02;
 2.5173462E+01  2.508355E+01  4.830222E+01;
@@ -38,14 +41,14 @@ D=[0.0000000E+00  0.000000E+00 -1.318058E+02;
 -5.1920577E-04  1.057734E-06  0.000000E+00;
 0.0000000E+00 -1.052755E-08  0.000000E+00];
 
-output=ones(size(input_hj,1),1);
-for i=1:size(input_hj,1)
-    if (input_hj(i,1)<=20.644) && (input_hj(i,1)>=0)
+output=ones(size(hj,1),1);
+for i=1:size(hj,1)
+    if (hj(i,1)<=20.644) && (hj(i,1)>=0)
 %     output(i,1)=polyval(flipud(D(:,2)),input_hj(i,1));   
-    output(i,1)=sum(D(:,2)'.*input_hj(i,1).^N);
-    elseif (input_hj(i,1)>=20.644) && (input_hj(i,1)<=54.886)
+    output(i,1)=sum(D(:,2)'.*hj(i,1).^N);
+    elseif (hj(i,1)>=20.644) && (hj(i,1)<=54.886)
 %     output(i,1)=polyval(flipud(D(:,3)),input_hj(i,1));
-    output(i,1)=sum(D(:,3)'.*input_hj(i,1).^N);
+    output(i,1)=sum(D(:,3)'.*hj(i,1).^N);
     else
     output(i)=NaN;
     end         
