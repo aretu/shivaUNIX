@@ -22,7 +22,7 @@ function varargout = shivaUNIX(varargin)
 
 % Edit the above text to modify the response to help shivaUNIX
 
-% Last Modified by GUIDE v2.5 24-Feb-2017 17:49:24
+% Last Modified by GUIDE v2.5 07-Jun-2019 16:28:40
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -52,6 +52,15 @@ function shivaUNIX_OpeningFcn(hObject, eventdata, handles, varargin)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 % varargin   command line arguments to shivaUNIX (see VARARGIN)
+% Function to maximize the window via undocumented Java call.
+% Reference: http://undocumentedmatlab.com/blog/minimize-maximize-figure-window
+set(handles.figure1, 'units', 'normalized', 'position', [0.01 0.01 0.9 0.9])
+
+axes(handles.axes6)
+matlabImage = imread('shiva.jpg');
+image(matlabImage)
+axis off
+axis image
 
 % Choose default command line output for shivaUNIX
 handles.output = hObject;
@@ -181,7 +190,7 @@ if ~ strcmp(fieldnames(handles),'dt'); msgbox(['ATTENTION: handles.dt=none']); e
 
 %% OPEN --------------------------------------------------------------------
 function OpenMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to OpenMenuItem (see GCBO)
+% hObject    handle to OpenMenuItem2 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
@@ -203,7 +212,6 @@ end
 
 fname=fieldnames(handles);
 I=strfind(fname,'GEF');
-
 if any(cell2mat(I))
     for i=1:length(fname)
         if ~isempty(strfind(fname{i},'GEF'));
@@ -232,7 +240,7 @@ ax_=findobj('Tag','edit2'); set(ax_,'String',handles.g2);
 ax_=findobj('Tag','edit3'); set(ax_,'String',handles.g3); 
 
 [FileName,PathName] = uigetfile('*.*','All Files (*.*)', ...
-    '/media/disk1/shivadir/');
+    'C:\Users\stear\Dropbox\Ricerca\SHIVA');
 
 
 cd (PathName)
@@ -333,13 +341,182 @@ eval(['handles.' handles.column{num+1} '= [1:1:length(file1.data(ll:nn,1))]''; '
 % --> ele
 
 
+hv=get(handles.XLab(1),'Value');
 handles.TimeZero=cumsum(handles.Stamp);
 handles.Time=zeros(size(handles.Stamp));
-handles.Time(1)=handles.XLab(1)*handles.Stamp(1);
-handles.Time(2:end)=handles.XLab(1)*handles.Stamp(1)+cumsum(handles.Stamp(2:end)); %plotto il numero di riga
+handles.Time(1)=hv*handles.Stamp(1);
+handles.Time(2:end)=hv*handles.Stamp(1) +cumsum(handles.Stamp(2:end)); %plotto il numero di riga
 
 handles.Done=[];
 
+
+
+guidata(hObject, handles);
+handles.zoom=0;
+
+plotta_ora(handles);
+
+function OpenMenuItem2_Callback(hObject, eventdata, handles)
+% hObject    handle to OpenMenuItem2 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+%ripulisci precedente
+
+ah_=get(handles.axes1,'children'); set(ah_,'XData',[],'YData',[]);
+ah_=get(handles.axes2,'children'); set(ah_,'XData',[],'YData',[]);
+ah_=get(handles.axes3,'children'); set(ah_,'XData',[],'YData',[]);
+
+I=strcmp(fieldnames(handles),'column');
+
+if any(I)
+    for i=1:length(handles.column)
+eval(['handles=rmfield(handles,''', handles.column{i}, ''');'])
+    end
+handles=rmfield(handles,'column');
+
+end
+
+fname=fieldnames(handles);
+I=strfind(fname,'GEF');
+if any(cell2mat(I))
+    for i=1:length(fname)
+        if ~isempty(strfind(fname{i},'GEF'));
+eval(['handles=rmfield(handles,''', fname{i}, ''');'])
+        end
+    end
+end
+
+
+handles.load=0; % flag su load o open
+clear file1
+I=strcmp(fieldnames(handles),'new'); if any(I); handles=rmfield(handles,'new'); end
+I=strcmp(fieldnames(handles),'X'); if any(I); handles=rmfield(handles,'X'); end
+I=strcmp(fieldnames(handles),'TimeZero'); if any(I); handles=rmfield(handles,'TimeZero'); end
+
+
+
+%definisce i grafici da plottare:
+%qui ci sono i default
+handles.g1=2; 
+handles.g2=3;
+handles.g3=5;
+
+ax_=findobj('Tag','edit1'); set(ax_,'String',handles.g1); 
+ax_=findobj('Tag','edit2'); set(ax_,'String',handles.g2); 
+ax_=findobj('Tag','edit3'); set(ax_,'String',handles.g3); 
+
+[FileName,PathName] = uigetfile('*.*','All Files (*.*)', ...
+    'C:\Users\stear\Dropbox\Ricerca\SHIVA');
+
+
+cd (PathName)
+
+%definisce i parametri da matrice
+%handles.column=importdata(FileName,'\t',1);
+
+fid=fopen(FileName,'r');
+for i=1:3
+file1=fgets(fid);
+end
+fclose(fid);
+
+
+%file0=importdata(FileName,'\t',3);file1=char(file0(3,:));
+[I]=find(file1==char(44)); change=logical(0);
+if ~isempty(I); file1(I)=char(46); change=logical(1); end
+A=sscanf(file1,'%f');
+b=length(A); clear A
+fid=fopen(FileName,'r');
+
+    for i=1:b
+    A=fscanf(fid,'%s',1);
+    %controlla che non interpreti uno spazio come nuova variabile
+        if any(strcmp(fieldnames(handles),'column')) & ...
+                strcmp(A,2); handles.column{i-1}={[char(handles.column(i-1)), '2']}; 
+        else handles.column(i)={A};
+        end
+        %controlla che non ce ne siano due uguali
+        S=sum(strcmp(handles.column(i), handles.column));
+        if S > 1; handles.column{i}=([char(handles.column(i)), '2']); end
+        
+    end
+    
+    fgets(fid);    fgets(fid); i=0;
+    if change
+    while 1
+       i=i+1;
+       tline = fgetl(fid);
+            if ~ischar(tline), break, end
+            [I]=find(tline==char(44));
+            if ~isempty(I); tline(I)=char(46); end
+            file1.data(i,:)=sscanf(tline,'%f');
+    end 
+    else
+        file1=importdata(FileName,'\t',3);
+    end
+fclose(fid);
+
+h_=findobj('Tag','dt_value');
+
+%[ndt,vdt]=grp2idx(file1.data(:,1));
+%if numel(vdt) > 1; handles.dt=str2double(vdt(2)); 
+%else
+%    handles.dt=str2double(vdt(1))
+%end
+    
+
+%set(h_,'String',handles.dt);
+
+handles.filename=FileName;
+
+handles.sm=0;
+handles.triggered=0;
+handles.cutted=[0 0];
+handles.loadT=0;
+handles.shearT=0;
+ll=1;
+nn=length(file1.data(:,1));
+
+%primo step:togliere tutto quello che ha un campionamento diverso da dt
+%handles.xlab=0:handles.dt:(length(file1.data)-1)*handles.dt;
+%memorizza anche gli originali
+%eval(['handles.' handles.column{1} ' = cumsum(file1.data(ll:nn,1)); '])
+%eval(['handles.v' num2str(1) ' = cumsum(file1.data(ll:nn,1)); '])
+
+
+handles.column{1}='Time';
+num=length(handles.column);
+
+for n=2:num
+test=double(handles.column{n});   
+if any(test==32); I=find(test~=32); handles.column{n}=char(test(I)); end
+eval(['handles.' handles.column{n} ' = file1.data(ll:nn,' num2str(n) ');'])
+end
+
+handles.column{num+1}='Stamp';
+eval(['handles.' handles.column{num+1} '= file1.data(ll:nn,1); '])
+
+num=length(handles.column);
+handles.column{num+1}='Rate';
+eval(['handles.' handles.column{num+1} '= [1:1:length(file1.data(ll:nn,1))]''; '])
+
+
+num=length(handles.column);
+handles.column{num+1}='RateZero';
+eval(['handles.' handles.column{num+1} '= [1:1:length(file1.data(ll:nn,1))]''; '])
+
+% --> ele
+
+
+hv=get(handles.XLab(1),'Value');
+handles.TimeZero=cumsum(handles.Stamp);
+handles.Time=zeros(size(handles.Stamp));
+handles.Time(1)=hv*handles.Stamp(1);
+handles.Time(2:end)=hv*handles.Stamp(1) +cumsum(handles.Stamp(2:end)); %plotto il numero di riga
+
+handles.Done=[];
+handles.Time=handles.Time*1000;
 
 
 guidata(hObject, handles);
@@ -735,17 +912,19 @@ function offset_Callback(hObject, eventdata, handles)
 h_=handles.column(sel);
 hOb=findobj('Tag','XLab');
 h_ele=get(hOb,'Value');
+htype=get(hOb,'String');
 
-if h_ele==2
+if  strcmp(htype{h_ele},'Time (s)')
    t_cut=handles.Time/1000;
-elseif h_ele==3;
+elseif  strcmp(htype{h_ele},'Slip (m)')
         if any(strcmp(fieldnames(handles),'slip'))
          t_cut=handles.slip;
         elseif any(strcmp(fieldnames(handles),'Slip_Enc_2'))
          t_cut=handles.Slip_Enc_2;
         end
-elseif h_ele==1
-         t_cut=handles.XLab;
+else
+   
+         t_cut=handles.X;
 end
 
 
@@ -1246,16 +1425,15 @@ end
 
 dint=findobj('Tag','Rint'); rint=str2double(get(dint,'String'))/2000;
 dext=findobj('Tag','Rext'); rext=str2double(get(dext,'String'))/2000;
-
 contents=get(hObject,'Value');
-cal.enc(1:10)=4/3*pi*(rext^2+rint*rext+rint^2)/(rext+rint);
+cal.enc(1:2)=4/3*pi*(rext^2+rint*rext+rint^2)/(rext+rint);
 
 if contents==2; cal.tHG=73.86; cal.tLG=cal.tHG; fref=250; end
 if contents==3; cal.tHG=1117.17; cal.tLG=cal.tHG; fref=250; end
 if contents==4; cal.tHG=730.94; cal.tLG=cal.tHG; fref=250; end
 if contents==5; cal.tLG=1118; cal.tHG=cal.tLG*100; fref=250; end
 if contents==6; cal.tHG=1179.2; cal.tLG=0.736e6; fref=250; end
-if contents==7; cal.tHG=0; cal.tLG=0.736e6; fref=120;
+if contents==7; cal.tHG=0; cal.tLG=0.736e6; fref=125;
     if isempty(handles.Done); handles.Stamp=handles.Stamp*1.2; handles.Time=handles.Time*1.2; end
 end
 if contents==8; cal.tHG=0; cal.tLG=0.736e6; fref=125;
@@ -1265,51 +1443,202 @@ if contents==9; cal.tHG=0; cal.tLG=0.736e6; fref=125;
     if isempty(handles.Done); handles.Stamp=handles.Stamp*2; handles.Time=handles.Time*2; end
 end
 if contents==10; cal.tHG=0; cal.tLG=0.736e6; fref=125; end
-
-
+if contents==11; cal.tHG=0; cal.tLG=0.736e6; fref=125; end
+if contents==11; cal.tHG=0; cal.tLG=0.736e6; fref=125; end
+if contents==12; cal.tHG=0; cal.tLG=0.736e6; fref=100; cal.enc(1)=4/3*pi*(rext^2+rint*rext+rint^2)/(rext+rint)/100;
+end
 
 cal.tSG=17.19E6;
-cal.GEM=3;
+cal.GEM=3.1;
 
-cal.torqueHG(1:10)=cal.tHG*3/2/pi/(rext^3-rint^3)*1E-6;
-cal.torqueLG(1:10)=cal.tLG*3/2/pi/(rext^3-rint^3)*1E-6;
-cal.torqueSG(1:10)=cal.tSG*3/2/pi/(rext^3-rint^3)*1E-6;
 
-cal.ax(1:10)=2.5/pi/(rext^2-rint^2)/1000;
+cal.torqueHG(1:12)=cal.tHG*3/2/pi/(rext^3-rint^3)*1E-6;
+cal.torqueLG(1:12)=cal.tLG*3/2/pi/(rext^3-rint^3)*1E-6;
+cal.torqueSG(1:12)=cal.tSG*3/2/pi/(rext^3-rint^3)*1E-6;
+rint_o=rint;
+%rint=0;
 
+if contents>=11; cal.ax=-7.93457/pi/(rext^2-rint^2)/1000; %MPa 
+else cal.ax=2.5/pi/(rext^2-rint^2)/1000; %MPa
+end
+
+
+%rint=rint_o;
 
 cal.lv(1)=5.0634;
-h_=findobj('Tag','edit13'); 
-cal.lv(2)=str2num(get(h_,'String')); %0.12*cal.lv(1); %% cambiato!!!!
+cal.lv(2)=0.3; %0.12*cal.lv(1); %% cambiato!!!!
 cal.lv(3)=1;
-cal.fluids(1:10)=4; %MPa/mV
+cal.fluids(1:12)=4; %MPa/mV
 
+%optional sensors in AI8-AI18
+
+AIstate=zeros(1,18);
+for L=1:18;
+    obj=num2str(L); obj=strcat('popupAI',obj);
+    if isempty(findobj('Tag',obj))
+    else
+    h=findobj('Tag',obj);
+    AIstate(1,L)=get(h,'Value'); 
+    end
+end
+
+cal.cosino=[8.737 0.857];
+%TC
+cal.ceriani=[1.667 9.333];
+cal.iscoP=[6.879 -0.328];
+cal.iscoV=[1 0];
+cal.iscoF=[1 0];
+cal.ftutaRH=[1/0.05 0];
+cal.ftutaT=[1/0.05 -20];
+cal.other=[1 0];
 
 %------ELABORAZIONE DATI
+
+for L=1:18;
+b=strfind(handles.column,strcat('AI',num2str(L))); j=0; n=[];
+for i=1:length(b); if ~isempty(b{i}); j=j+1; n(j)=i; end; end
+for j=1:length(n); 
+    switch AIstate(L)
+            case 0
+                disp('no channel')
+            case 1
+                disp('no sensor')
+            case 2 
+                disp('cosino')
+                eval(['new.InternalPressure=handles.' handles.column{n(j)} '*cal.cosino(1)+cal.cosino(2);'])
+            case 3
+                disp('thermocouple')
+                eval(['new.InternalTemperature=calibrate_temperature_fx(100,handles.' handles.column{n(j)} ',[],[]);'])
+                    %output=calibrate_temperature_fx(gain,input_hj,input_cj,compensation)
+            case 4
+                disp('ceriani')
+                eval(['new.ChamberPressure=10.^(handles.' handles.column{n(j)} '*cal.ceriani(1)+cal.ceriani(2));'])
+            case 5
+                disp('iscoP')
+                eval(['new.PumpPressure=handles.' handles.column{n(j)} '*cal.iscoP(1)+cal.iscoP(2);'])
+            case 6
+                disp('iscoV')
+                eval(['new.PumpVolume=handles.' handles.column{n(j)} '*cal.iscoV(1)+cal.iscoV(2);'])
+            case 7
+                disp('iscoF')
+                eval(['new.PumpFlow=handles.' handles.column{n(j)} '*cal.iscoF(1)+cal.iscoF(2);'])
+            case 8
+                disp('FtutaRH')
+                eval(['new.ProbeH=handles.' handles.column{n(j)} '*cal.FtutaRH(1)+cal.FtutaRH(2);'])
+            case 9
+                disp('FtutaT')
+                eval(['new.ProbeT=handles.' handles.column{n(j)} '*cal.FtutaT(1)+cal.FtutaT(2);'])
+            case 10
+                disp('even more sensors??')
+                eval(['new.Other=handles.' handles.column{n(j)} '*cal.other(1)+cal.other(2);'])
+    end
+end
+end
+
 b=(strfind(handles.column,'Axial')); j=0; n=[];
 for i=1:length(b); if ~isempty(b{i}); j=j+1; n(j)=i; end; end
 for j=1:length(n); 
 eval(['new.Normal=handles.' handles.column{n(j)} '*cal.ax(j);'])
 end
 
+%pore fluids
+
 h_=findobj('Tag','fluid');
 statoF=get(h_,'Value');
+% 
+% if statoF==1
+% b=(strfind(handles.column,'IO')); j=0; n=[];
+% for i=1:length(b); if ~isempty(b{i}); j=j+1; n(j)=i; end; end
+% for j=1:length(n); 
+%         eval(['new.Pf=handles.' handles.column{n(j)} '*cal.fluids(1);']);
+%         eval(['new.EffPressure=new.Normal-new.Pf;']); 
+% end
 
-if statoF==1
-b=(strfind(handles.column,'IO')); j=0; n=[];
-for i=1:length(b); if ~isempty(b{i}); j=j+1; n(j)=i; end; end
-for j=1:length(n); 
+% if contents>=12; b=(strfind(handles.column,'GefranPressure')); j=0; n=[];
+% else b=(strfind(handles.column,'FluidPressure')); j=0; n=[];
+% end
+% 
+% for i=1:length(b); if ~isempty(b{i}); j=j+1; n(j)=i; end; end
+% for j=1:length(n); 
+%         eval(['new.Pf=handles.' handles.column{n(j)} '*cal.fluids(1);']);
+%         eval(['new.EffPressure=new.Normal-new.Pf;']); 
+% end
+% end
+
+h_=findobj('Tag','popupPF');
+popupPF=get(h_,'Value');
+
+switch popupPF
+    case    1
+        disp('No pore pressure')
+    case    2
+        disp('Gefran is measuring pore pressure')
+        if contents>=12; b=(strfind(handles.column,'GefranPressure')); j=0; n=[];
+        elseif contents<=11; b=(strfind(handles.column,'FluidPressure')); j=0; n=[];
+        else b=strfind(handles.column,'IO'); j=0; n=[];
+        end
+
+        for i=1:length(b); if ~isempty(b{i}); j=j+1; n(j)=i; end; end
+        for j=1:length(n); 
         eval(['new.Pf=handles.' handles.column{n(j)} '*cal.fluids(1);']);
-        eval(['new.EffPressure=new.Normal-new.Pf;']); 
+        eval(['new.EffPressure=new.Normal-new.Pf;']);
+        end
+    case    3
+        disp('Gems is measuring pore pressure')
+        b=strfind(handles.column,'GEMS'); j=0; n=[];
+        for i=1:length(b); if ~isempty(b{i}); j=j+1; n(j)=i; end; end
+        for j=1:length(n); 
+        eval(['new.Pf=handles.' handles.column{n(j)} '*3.15911 - 2.557;']);
+        eval(['new.EffPressure=new.Normal-new.Pf;']);
+        end
+    case    4
+        disp('IscoPump is measuring pore pressure')
+        gigione=input('What is the exact name of Isco Pump vector? ','s');
+        
+        b=strfind(handles.column,gigione); j=0; n=[];
+        for i=1:length(b); if ~isempty(b{i}); j=j+1; n(j)=i; end; end
+        for j=1:length(n); 
+        eval(['new.Pf=handles.' handles.column{n(j)} '*cal.iscoP(1) + cal.iscoP(2);']);
+        eval(['new.EffPressure=new.Normal-new.Pf;']);
+        end
 end
 
-b=(strfind(handles.column,'FluidPressure')); j=0; n=[];
-for i=1:length(b); if ~isempty(b{i}); j=j+1; n(j)=i; end; end
-for j=1:length(n); 
-        eval(['new.Pf=handles.' handles.column{n(j)} '*cal.fluids(1);']);
-        eval(['new.EffPressure=new.Normal-new.Pf;']); 
+h_=findobj('Tag','popupPC');
+popupPC=get(h_,'Value');
+
+switch popupPC
+    case    1
+        disp('No confining pressure')
+    case    2
+        disp('Gefran is measuring confining pressure')
+        if contents>=12; b=(strfind(handles.column,'GefranPressure')); j=0; n=[];
+        elseif contents<=11; b=(strfind(handles.column,'FluidPressure')); j=0; n=[];
+        else b=strfind(handles.column,'IO'); j=0; n=[];
+        end
+
+        for i=1:length(b); if ~isempty(b{i}); j=j+1; n(j)=i; end; end
+        for j=1:length(n); 
+        eval(['new.Pc=handles.' handles.column{n(j)} '*cal.fluids(1);']);
+        end
+    case    3
+        disp('Gems is measuring confining pressure')
+        b=strfind(handles.column,'GEMS'); j=0; n=[];
+        for i=1:length(b); if ~isempty(b{i}); j=j+1; n(j)=i; end; end
+        for j=1:length(n); 
+        eval(['new.Pc=handles.' handles.column{n(j)} '*3.15911 - 2.557;']);
+        end
+    case    4
+        disp('IscoPump is measuring confining pressure')
+        gigione=input('What is the exact name of Isco Pump vector? ','s');
+        
+        b=strfind(handles.column,gigione); j=0; n=[];
+        for i=1:length(b); if ~isempty(b{i}); j=j+1; n(j)=i; end; end
+        for j=1:length(n); 
+        eval(['new.Pc=handles.' handles.column{n(j)} '*cal.iscoP(1) + cal.iscoP(2);']);
+        end
 end
-end
+
+% encoders
 
 h=findobj('Tag','nodeEnc1');
 node=str2num(get(h,'String')); 
@@ -1323,8 +1652,6 @@ f2crat=node(:,2);
 
 h=findobj('Tag','MaxEnc');
 maxE=str2double(get(h,'String')) ;
-
-
 
 b=(strfind(handles.column,'Encoder')); j=0; n=[];
 for i=1:length(b); if ~isempty(b{i}); j=j+1; n(j)=i; end; end
@@ -1363,7 +1690,8 @@ end
 I=J; %cambiato 15/03
 %figure; plot(d0); hold on; plot(I,d0(I),'*r')
 
-
+fO=findobj('Tag','incremental'); fOV=get(fO,'value')
+if fOV==1
 if ~isempty(I)
 for ii=1:length(I)
     if ii==length(I) & I(ii) + 2 < length(d0)
@@ -1375,31 +1703,35 @@ d0(I(ii)+1:I(ii+1))=d0(I(ii)+1:I(ii+1))-d0(I(ii)+2)+d0(I(ii));
     end
 end
 end
+end %if fOV
 
 I=find(d0<0);
 d0(I)=0;
 
+    ITorq=findobj('Tag','Torque');
+    ITorqO=get(ITorq,'Value');
 
 h=handles.Stamp/1000;
 d1=d0*cal.enc(1);
-if testE==2
-fcamp=(1./max(1/fref,h));
-Fs=max(fcamp);
-alphas=ceil(log10(Fs));
-fc=max(fref/100,Fs/10^(alphas));
-disp(['fc= ',num2str(fc)])
-nodes=node2; fcrat=f2crat;
-if i==1; nodes=node1; fcrat=f1crat; end
-if Fs > fref/100
-disp('red')
-%riduci l'effetto window
-d=fdesign.lowpass('N,Fc',nodes,fcrat,Fs);
+if ITorqO==0
+    fcamp=(1./max(1/fref,h));
+    Fs=max(fcamp);
+    alphas=ceil(log10(Fs));
+    fc=max(fref/100,Fs/10^(alphas));
+    disp(['fc= ',num2str(fc)])
+    nodes=node2; fcrat=f2crat;
+    if i==1; nodes=node1; fcrat=f1crat; 
+    end
+    if Fs > fref/100
+    disp('red')
+    %riduci l'effetto window
+    d=fdesign.lowpass('N,Fc',nodes,fcrat,Fs);
 
-Hd=design(d,'window','Window',tukeywin(nodes+1,0));
-d_sm=filtfilt(Hd.Numerator,1,d1);
-else
-d_sm=d1;
-end
+    Hd=design(d,'window','Window',tukeywin(nodes+1,0));
+    d_sm=filtfilt(Hd.Numerator,1,d1);
+    else
+    d_sm=d1;
+    end
 else
 d_sm=d1;
 end
@@ -1494,28 +1826,37 @@ Ia=find(a==min(a),1,'first');
 new.dspring=(x - x(Ia))*cal.lv(1);
 new.dspring(1:Ia)=0;
 
-new.NormalGH=(handles.Axial*2.5 -(0.2666+0.0501*new.dspring))/pi/(rext^2-rint^2)/1000;
+if contents>=11; new.NormalGH=(-7.93457*handles.Axial-(0.2666+0.0501*new.dspring))/pi/(rext^2-rint^2)/1000; %MPa 
+else new.NormalGH=(2.5*handles.Axial-(0.2666+0.0501*new.dspring))/pi/(rext^2-rint^2)/1000;
+end
+
 end
 
 
 b=(strfind(handles.column,'Torque')); j=0; n=[];
 for i=1:length(b); if ~isempty(b{i}); j=j+1; n(j)=i; end; end
+
 for j=1:length(n)
     if ~isempty(strfind(handles.column{n(j)},'HG')) | strcmp(handles.column{n(j)},'Torque') ; cali=cal.torqueHG(j);
     elseif ~isempty(strfind(handles.column{n(j)},'LG')) ; cali=cal.torqueLG(j);
     end
     
-   % if cal.tHG==0; new.GEM=handles.Gems*cal.GEM; end
-    
-   if testE==2 & Fs > fref/100
-    eval(['new.shear' num2str(j) '=filtfilt(Hd.Numerator,1,handles.' handles.column{n(j)} '*cali);']);
-   else
+    if any(strcmp(fieldnames(handles),'Gems')); 
+    new.GEM=handles.Gems*cal.GEM; 
+    elseif any(strcmp(fieldnames(handles),'GEMSPressure')); 
+    new.GEM=handles.GEMSPressure*cal.GEM; 
+    end
+  
+
+%   if ITorqO==1 & testE==2 & Fs > fref/100
+%    eval(['new.shear' num2str(j) '=filtfilt(Hd.Numerator,1,handles.' handles.column{n(j)} '*cali);']);
+%   else
           eval(['new.shear' num2str(j) '=handles.' handles.column{n(j)} '*cali;']);
-   end
+%   end
     eval(['new.Mu' num2str(j) '=new.shear' num2str(j) './new.Normal;']);
    
 % non sono sicura    if statoGH==1;eval(['new.Mu' num2str(j) '=new.shear' num2str(j) './new.NormalGH;']); end
-    if statoF==1; eval(['new.Mu' num2str(j) '=new.shear' num2str(j) './new.EffPressure;']); end
+    if (statoF==1) OR (popupPF>=2); eval(['new.Mu' num2str(j) '=new.shear' num2str(j) './new.EffPressure;']); end
 end
 
 
@@ -1524,7 +1865,7 @@ end
 h_=findobj('Tag','TC');
 statoTC=get(h_,'Value');
 
-if statoTC==1
+if statoTC==1 && isempty(dir('*TC'))==0;
 %thermocouple
     filname=dir('*TC');
     
@@ -1577,13 +1918,13 @@ dn=50;
 time2=cumsum(handles.Stamp);
 
 if any(strcmp(fieldnames(new),'vel'))
-[Temp]=temp(handles.Stamp,new.vel,new.shear1,dn); %change for vel
+[Temp]=temp(handles.Time/1000,new.vel,new.shear1,new.slip, dn); %change for vel
 
 else
      if max(new.vel) <= 20e-3
-[Temp]=temp(handles.Stamp,new.SlipVel_Enc_1,new.shear1,dn);
+[Temp]=temp(handles.Time/1000,new.SlipVel_Enc_1,new.shear1,new.Slip_Enc_1,dn);
      else
-[Temp]=temp(handles.Stamp,new.SlipVel_Enc_2,new.shear1,dn); %change for vel
+[Temp]=temp(handles.Time/1000,new.SlipVel_Enc_2,new.shear1,new.Slip_Enc_2,dn); %change for vel
      end
 end
 new.TempE=interp1(time2(1:dn:end),Temp,time2);
@@ -1593,6 +1934,46 @@ for i=1:length(b); if ~isempty(b{i}); j=j+1; n(j)=i; end; end
 for j=1:length(n); ...
         eval(['new.StrainGauge' num2str(j) '=handles.' handles.column{n(j)} '*cal.torqueSG(j);']); 
         eval(['new.MuSG' num2str(j) '=new.StrainGauge' num2str(j) './new.Normal;']); 
+end
+
+%% Isco pump file
+
+if isempty(dir('*IP'))==0 || isempty(dir('*ISCO'))==0;
+%thermocouple
+    filname=[dir('*IP') dir('*ISCO')];
+    
+    if isempty(filname) | length(filname) > 1
+%    nn=handles.filename(1:4)
+%    xx=dir(['~/shivadir/Shiva Experiments/' nn '*']);
+%    if ~isempty(xx)
+%    yy=dir(['~/shivadir/Shiva Experiments/' xx.name '/*TC*']);
+%    if ~isempty(yy) & length(yy)==1
+    [filename,PathName] = uigetfile('*.*','All Files (*.*)', ...
+    pwd);
+   
+    clear filname
+    filname.name=filename;
+
+%    filname=struct('name',{['~/shivadir/Shiva Experiments/' xx.name '/' yy.name]});
+%    end
+%    end
+    end
+    
+    IP=importdata(filname.name,'\t',1);
+    
+    for i=1:size(IP.data,2)
+        header=strrep(IP.colheaders{1,i},'_','');
+        header=strrep(header,'(s)','');
+        header=strrep(header,'(ms)','');
+        header=strrep(header,'(kPa)','');
+        header=strrep(header,'(MPa)','');
+        header=strrep(header,'(mL/min)','');
+        header=strrep(header,'(mL)','');
+
+        new.(header)=IP.data(:,i);
+
+%         eval(['new.'  IP.colheaders{1,i} '=IP.data(1,' i ');']); 
+    end
 end
 
 %% HR and TA
@@ -1609,8 +1990,48 @@ for i=1:length(b); if ~isempty(b{i}); j=j+1; n(j)=i; end; end
 for j=1:length(n); 
 eval(['new.TAc=(handles.' handles.column{n(j)} './0.05)-20;'])
 end
+%% Vacuum
 
+h_=findobj('Tag','vac');
+statoVAC=get(h_,'Value');
 
+if statoVAC==1;
+    
+    new.VAC=10.^(handles.TA*1.667-9.333);
+else %keyboard
+end
+% clear statoVAC
+% Vac=10.^(TA*1.667-9.333); %Pa
+
+%% Thickness
+
+h_=findobj('Tag','thick');
+statoTHICK=get(h_,'Value');
+
+h_=findobj('Tag','thickz');
+thickz=get(h_,'String');
+thickz=str2num(thickz);
+
+if statoTHICK==1;
+
+b=(strfind(handles.column,'LVDT')); j=0; n=[];
+for i=1:length(b); if ~isempty(b{i}); j=j+1; n(j)=i; end; end
+for j=1; 
+eval(['new.thickness=((handles.' handles.column{n(j)} '-thickz)*5.0634);'])
+end
+
+% new.thickness=abs((handles.LVDT-thickz)*5.0634);
+
+    %prova thickness_high
+%     ha=find(handles.Time==0,1,'first');
+%     LVDT_high2=handles.LVDT_high-handles.LVDT_high(ha,1);
+%     new.thickness_high=LVDT_high2-new.thickness(ha,1);
+% 
+%     clear ha LVDT_high2
+
+else %keyboard
+end
+% clear statoTHICK
 
 %% GEF
 
@@ -2136,13 +2557,16 @@ h_=findobj('Tag','edit3LB'); set(h_,'String',1);
 
 
 [FileName,PathName] = uigetfile('*.*','All Files (*.*)', ...
-    '/home/');
-
+    'C:\Users\Stefano\Dropbox\Ricerca\SHIVA');
 
 cd (PathName)
 
 data=load(FileName);
 
+
+dataName=fieldnames(data);
+% if length(dataName); data=getfield(data,dataName{1}); end
+    
 
 h_=findobj('Tag','dt_value');
 stato=get(h_,'Value');
@@ -2168,7 +2592,8 @@ nn=length(data.Time);
 handles.column=fieldnames(data)
 
 for i=1:length(handles.column)
-    eval(['handles.' handles.column{i} '=data.' handles.column{i} ';'])
+    handles.(handles.column{i})=data.(handles.column{i}); %debuggato
+%     eval(['handles.' handles.column{i} '=data.' handles.column{i} ';'])
 end
 
 
@@ -2177,8 +2602,11 @@ h_=findobj('Tag','edit2LB'); set(h_,'String',handles.column);
 h_=findobj('Tag','edit3LB'); set(h_,'String',handles.column);
 
 handles.load=1;
-
+handles.Done=1;
+new=handles;
 guidata(hObject, handles);
+guidata(hObject, new);
+
 handles.zoom=0;
 
 plotta_ora(handles);
@@ -2430,31 +2858,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 
-
-
-
-
-function edit13_Callback(hObject, eventdata, handles)
-% hObject    handle to edit13 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of edit13 as text
-%        str2double(get(hObject,'String')) returns contents of edit13 as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function edit13_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit13 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
 function T0_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to edit13 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -2495,3 +2898,332 @@ function AdjRate_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of AdjRate
+
+
+% --- Executes on button press in Torque.
+function Torque_Callback(hObject, eventdata, handles)
+% hObject    handle to Torque (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of Torque
+
+
+% --- Executes on button press in off_enc_0.
+function off_enc_0_Callback(hObject, eventdata, handles)
+% hObject    handle to off_enc_0 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+I=handles.triggered;
+handles.Encoder2(1:I)=0;
+handles.Encoder(1:I)=0;
+guidata(hObject, handles);
+
+
+% --- Executes on button press in incremental.
+function incremental_Callback(hObject, eventdata, handles)
+% hObject    handle to incremental (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --- Executes on button press in vac.
+function vac_Callback(hObject, eventdata, handles)
+% hObject    handle to vac (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of vac
+
+
+% --- Executes on button press in thick.
+function thick_Callback(hObject, eventdata, handles)
+% hObject    handle to thick (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of thick
+
+
+
+function thickz_Callback(hObject, eventdata, handles)
+% hObject    handle to thickz (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of thickz as text
+%        str2double(get(hObject,'String')) returns contents of thickz as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function thickz_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to thickz (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+
+% hOb=findobj('Tag','XLab');
+% h_ele=get(hOb,'Value');
+% 
+% if h_ele==2
+%    handles.X=handles.Time/1000;
+% elseif h_ele==3;
+%         if any(strcmp(fieldnames(handles),'slip'))
+%          handles.X=handles.slip;
+%         elseif any(strcmp(fieldnames(handles),'Slip_Enc_2'))
+%          handles.X=handles.Slip_Enc_2;
+%         end
+% elseif h_ele==1
+%          handles.X=handles.Rate;
+% end
+% eval(['plot(handles.X,handles.' handles.column{(handles.g3)} ',''ob'',''parent'',handles.axes3);']); 
+% legend(handles.axes3,[handles.column{handles.g3}])
+
+% --- Executes during object creation, after setting all properties.
+
+
+% --- Executes on selection change in popupAI6.
+function popupAI6_Callback(hObject, eventdata, handles)
+% hObject    handle to popupAI6 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns popupAI6 contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from popupAI6
+
+
+% --- Executes during object creation, after setting all properties.
+function popupAI6_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to popupAI6 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in popupAI7.
+function popupAI7_Callback(hObject, eventdata, handles)
+% hObject    handle to popupAI7 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns popupAI7 contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from popupAI7
+
+
+% --- Executes during object creation, after setting all properties.
+function popupAI7_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to popupAI7 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in popupAI8.
+function popupAI8_Callback(hObject, eventdata, handles)
+% hObject    handle to popupAI8 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns popupAI8 contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from popupAI8
+
+
+% --- Executes during object creation, after setting all properties.
+function popupAI8_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to popupAI8 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in popupAI9.
+function popupAI9_Callback(hObject, eventdata, handles)
+% hObject    handle to popupAI9 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns popupAI9 contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from popupAI9
+
+
+% --- Executes during object creation, after setting all properties.
+function popupAI9_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to popupAI9 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in popupAI10.
+function popupAI10_Callback(hObject, eventdata, handles)
+% hObject    handle to popupAI10 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns popupAI10 contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from popupAI10
+
+
+% --- Executes during object creation, after setting all properties.
+function popupAI10_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to popupAI10 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in popupAI16.
+function popupAI16_Callback(hObject, eventdata, handles)
+% hObject    handle to popupAI16 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns popupAI16 contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from popupAI16
+
+
+% --- Executes during object creation, after setting all properties.
+function popupAI16_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to popupAI16 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in popupAI17.
+function popupAI17_Callback(hObject, eventdata, handles)
+% hObject    handle to popupAI17 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns popupAI17 contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from popupAI17
+
+
+% --- Executes during object creation, after setting all properties.
+function popupAI17_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to popupAI17 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in popupPF.
+function popupPF_Callback(hObject, eventdata, handles)
+% hObject    handle to popupPF (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns popupPF contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from popupPF
+
+
+% --- Executes during object creation, after setting all properties.
+function popupPF_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to popupPF (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in popupAI18.
+function popupAI18_Callback(hObject, eventdata, handles)
+% hObject    handle to popupAI18 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns popupAI18 contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from popupAI18
+
+
+% --- Executes during object creation, after setting all properties.
+function popupAI18_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to popupAI18 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in popupPC.
+function popupPC_Callback(hObject, eventdata, handles)
+% hObject    handle to popupPC (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns popupPC contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from popupPC
+
+
+% --- Executes during object creation, after setting all properties.
+function popupPC_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to popupPC (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes when uipanel1 is resized.
+function uipanel1_ResizeFcn(hObject, eventdata, handles)
+% hObject    handle to uipanel1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
