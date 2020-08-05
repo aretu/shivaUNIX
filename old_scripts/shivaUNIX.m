@@ -16,7 +16,7 @@ function varargout = shivaUNIX(varargin)
 %
 %      SHIVAUNIX('CALLBACK',hObject,eventData,handles,...) calls the local
 %      function named CALLBACK in SHIVAUNIX.M with the given input arguments.
-%
+
 %      SHIVAUNIX('Property','Value',...) creates a new SHIVAUNIX or raises the
 %      existing singleton*.  Starting from the left, property value pairs are
 %      applied to the GUI before shivaWIN_OpeningFunction gets called.  An
