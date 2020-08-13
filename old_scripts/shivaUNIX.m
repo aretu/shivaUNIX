@@ -1,10 +1,11 @@
 % Created by:
 % ----------------------------------------------------------------------- %
-%   Author:  Stefan Nielsen, Elena Spagnuolo                              %
+%   Author:  Elena Spagnuolo                              %
 %   Date:    2012                                                         %
 %   E-mail:                                                               %
 % ----------------------------------------------------------------------- %
 % With contributions from Christopher W. Harbord, Stefano Aretusini
+
 
 function varargout = shivaUNIX(varargin)
 % SHIVAUNIX M-file for shivaUNIX.fig
@@ -16,7 +17,7 @@ function varargout = shivaUNIX(varargin)
 %
 %      SHIVAUNIX('CALLBACK',hObject,eventData,handles,...) calls the local
 %      function named CALLBACK in SHIVAUNIX.M with the given input arguments.
-%
+
 %      SHIVAUNIX('Property','Value',...) creates a new SHIVAUNIX or raises the
 %      existing singleton*.  Starting from the left, property value pairs are
 %      applied to the GUI before shivaWIN_OpeningFunction gets called.  An
@@ -962,9 +963,9 @@ elseif  strcmp(htype{h_ele},'Slip (m)')
     elseif any(strcmp(fieldnames(handles),'Slip_Enc_2'))
         t_cut=handles.Slip_Enc_2;
     end
-else
+elseif  strcmp(htype{h_ele},'Rate (#)')
     
-    t_cut=handles.X;
+    t_cut=handles.Rate;
 end
 
 
@@ -1594,10 +1595,8 @@ elseif h_ele==3;
         t_cut=handles.Slip_Enc_2;
     end
 elseif h_ele==1
-    t_cut=handles.XLab;
+    t_cut=handles.Rate;
 end
-
-
 
 [xi,yi]=ginput(2) ;
 mat(1,:)=abs(t_cut-ones(size(t_cut))*xi(1));
