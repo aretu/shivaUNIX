@@ -64,6 +64,7 @@ function shivaUNIX_OpeningFcn(hObject, eventdata, handles, varargin)
 % varargin   command line arguments to shivaUNIX (see VARARGIN)
 % Function to maximize the window via undocumented Java call.
 % Reference: http://undocumentedmatlab.com/blog/minimize-maximize-figure-window
+
 set(handles.figure1, 'units', 'normalized', 'position', [0.01 0.01 0.9 0.9])
 
 axes(handles.axes6)
@@ -955,15 +956,15 @@ hOb=findobj('Tag','XLab');
 h_ele=get(hOb,'Value');
 htype=get(hOb,'String');
 
-if  strcmp(htype{h_ele},'Time (s)')
+if  contains(htype{h_ele},'Time')
     t_cut=handles.Time/1000;
-elseif  strcmp(htype{h_ele},'Slip (m)')
+elseif  contains(htype{h_ele},'Slip')
     if any(strcmp(fieldnames(handles),'slip'))
         t_cut=handles.slip;
     elseif any(strcmp(fieldnames(handles),'Slip_Enc_2'))
         t_cut=handles.Slip_Enc_2;
     end
-elseif  strcmp(htype{h_ele},'Rate (#)')
+elseif  contains(htype{h_ele},'Rate')
     
     t_cut=handles.Rate;
 end
@@ -1021,7 +1022,7 @@ h_ele=get(hOb,'Value');
 
 if h_ele==2
     t_cut=handles.Time/1000;
-elseif h_ele==3;
+elseif h_ele==3
     if any(strcmp(fieldnames(handles),'slip'))
         t_cut=handles.slip;
     elseif any(strcmp(fieldnames(handles),'Slip_Enc_2'))
