@@ -3728,28 +3728,10 @@ for j=1
     new.Encoder2=unwrap(handles.(handles.column{n(j)}));
 end
 
+handles.Encoder2=new.Encoder2;
 
-%% final routine to update the fields
-nomi=[];
-
-[a,b]=size(handles.column); [aa,bb]=size(fieldnames(new));
-fname=fieldnames(new);
-for i=1:length(fname)
-    K=find(~strcmp(fname{i},handles.column));
-    handles.column=handles.column(K);
-end
-inp1=handles.column;
-
-if aa==1 & aa==b | bb==1 & a==1; inp1=handles.column'; end
-nomi=[inp1 , fieldnames(new)];
-
-handles.column=[];
-handles.column=nomi';
-
-nomi2=fieldnames(new);
-for i=1:length(nomi2)
-    eval(['handles.' char(nomi2(i)) '=new.' char(nomi2(i)) ';'])
-end
+% handles.column
+clear handles.new
 
 h_=findobj('Tag','edit1LB'); set(h_,'String',handles.column)
 h_=findobj('Tag','edit2LB'); set(h_,'String',handles.column)
@@ -3757,7 +3739,6 @@ h_=findobj('Tag','edit3LB'); set(h_,'String',handles.column)
 
 
 handles.Done=1;
-handles.new=fieldnames(new)';
 guidata(hObject, handles);
 plotta_ora(handles)
 end
