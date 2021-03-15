@@ -31,7 +31,7 @@ function varargout = shivaUNIX(varargin)
 
 % Edit the above text to modify the response to help shivaUNIX
 
-% Last Modified by GUIDE v2.5 27-Oct-2020 18:20:49
+% Last Modified by GUIDE v2.5 15-Mar-2021 11:14:54
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -3713,4 +3713,21 @@ handles.Done=1;
 handles.new=fieldnames(new)';
 guidata(hObject, handles);
 plotta_ora(handles)
+end
+
+
+% --- Executes on button press in pushbutton22.
+function pushbutton22_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton22 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+b=(strfind(handles.column,'Encoder2')); j=0; n=[];
+for i=1:length(b); if ~isempty(b{i}); j=j+1; n(j)=i; end; end
+for j=1:length(n);
+    new.Encoder2=unwrap(handles.Encoder2);
+end
+
+%update struct
+handles.Encoder2=new.Encoder2;
 end
