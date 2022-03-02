@@ -2903,11 +2903,12 @@ cal.cosino=[8.737 0.857];
 %TC
 cal.ceriani=[1.667 9.333];
 cal.iscoP=[6.879 -0.328];
-cal.iscoV=[1 0];
+cal.iscoV=[-50.885694343591595 508.7206208742802];
 cal.iscoF=[1 0];
 cal.ftutaRH=[1/0.05 0];
 cal.ftutaT=[1/0.05 -20];
 cal.other=[1 0];
+cal.BigMotorTorque=[58.018 0];
 
 %% ELABORAZIONE DATI
 
@@ -2975,6 +2976,10 @@ for L=1:18;
             case 10
                 disp('even more sensors??')
                 eval(['new.Other=handles.' handles.column{n(j)} '*cal.other(1)+cal.other(2);'])
+            case 11
+                disp('Motor torque, analog output of Gefran inverter')
+                eval(['new.BigMotorTorque=handles.' handles.column{n(j)} '*cal.BigMotorTorque(1)+cal.BigMotorTorque(2);'])
+                new.BigMotorShearStress=abs(new.BigMotorTorque)*3/2/pi/(rext^3-rint^3)*1E-6;
         end
     end
 end
