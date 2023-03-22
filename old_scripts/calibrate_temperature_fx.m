@@ -5,7 +5,7 @@
 %   E-mail:  ste.aretu (at) gmail (dot) com                               %
 % ----------------------------------------------------------------------- %
 
-% Documentation: https://srdata.nist.gov/its90/download/type_k.tab
+% Documentation: https://srdata.nist.gov/its90/type_k/kcoefficients_inverse.html
 
 function output=calibrate_temperature_fx(gain,input_hj,input_cj,compensation)
 
@@ -33,6 +33,7 @@ end
 hj=input_hj/gain*1000;
 
 % degrees C and mV
+% first column: -200°C to 0°C, second: 0°C to 500°C, third: 500°C to 1372°C
 N=0:1:9;
 D=[0.0000000E+00  0.000000E+00 -1.318058E+02;
     2.5173462E+01  2.508355E+01  4.830222E+01;
@@ -47,7 +48,9 @@ D=[0.0000000E+00  0.000000E+00 -1.318058E+02;
 
 output=ones(size(hj,1),1);
 for i=1:size(hj,1)
-    if (hj(i,1)<=20.644) && (hj(i,1)>=0)
+    if (hj(i,1)<=0) && (hj(i,1)>=-5.891)
+        output(i,1)=sum(D(:,1)'.*hj(i,1).^N);
+    elseif (hj(i,1)<=20.644) && (hj(i,1)>=0)
         %     output(i,1)=polyval(flipud(D(:,2)),input_hj(i,1));
         output(i,1)=sum(D(:,2)'.*hj(i,1).^N);
     elseif (hj(i,1)>=20.644) && (hj(i,1)<=54.886)

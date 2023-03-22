@@ -22,7 +22,8 @@ function varargout = shivaUNIX(varargin)
 %      existing singleton*.  Starting from the left, property value pairs are
 %      applied to the GUI before shivaWIN_OpeningFunction gets called.  An
 %      unrecognized property name or invalid value makes property application
-%      stop.  All inputs are passed to shivaUNIX_OpeningFcn via varargin.
+%      stop.  All inputs are passed to shivaUNIX_OpeningFcn via varargin.3
+
 %
 %      *See GUI Options on GUIDE's Tools menu.  Choose "GUI allows only one
 %      instance to run (singleton)".
@@ -2867,7 +2868,9 @@ end
 
 cal.tSG=17.19E6;
 cal.GEM=3.1;
-
+cal.gems=[3.15911 -2.557];
+%after s1949
+cal.gems=[3.1022 -2.5052];
 
 cal.torqueHG(1:12)=cal.tHG*3/2/pi/(rext^3-rint^3)*1E-6;
 cal.torqueLG(1:12)=cal.tLG*3/2/pi/(rext^3-rint^3)*1E-6;
@@ -2899,7 +2902,9 @@ for L=1:18;
     end
 end
 
-cal.cosino=[8.737 0.857];
+% cal.cosino=[8.737 0.857];
+% after s1949
+cal.cosino=[9.0067 0.79664];
 %TC
 cal.ceriani=[1.667 9.333];
 cal.iscoP=[6.879 -0.328];
@@ -3040,7 +3045,7 @@ switch popupPF
         b=strfind(handles.column,'GEMS'); j=0; n=[];
         for i=1:length(b); if ~isempty(b{i}); j=j+1; n(j)=i; end; end
         for j=1:length(n);
-            eval(['new.Pf=handles.' handles.column{n(j)} '*3.15911 - 2.557;']);
+            eval(['new.Pf=handles.' handles.column{n(j)} '*cal.gems(1) + cal.gems(2);']);
             eval(['new.EffPressure=new.Normal-new.Pf;']);
         end
     case    4
