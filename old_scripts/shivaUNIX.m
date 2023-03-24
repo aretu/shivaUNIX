@@ -6,7 +6,6 @@
 % ----------------------------------------------------------------------- %
 % With contributions from Christopher W. Harbord, Stefano Aretusini
 
-
 function varargout = shivaUNIX(varargin)
 % SHIVAUNIX M-file for shivaUNIX.fig
 %      SHIVAUNIX, by itself, creates a new SHIVAUNIX or raises the existing
@@ -32,7 +31,7 @@ function varargout = shivaUNIX(varargin)
 
 % Edit the above text to modify the response to help shivaUNIX
 
-% Last Modified by GUIDE v2.5 15-Mar-2021 11:14:54
+% Last Modified by GUIDE v2.5 23-Mar-2023 14:23:45
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -120,7 +119,6 @@ switch popup_sel_index
         surf(peaks);
 end
 end
-
 
 %% WRITE --------------------------------------------------------------------
 function write_Callback(hObject, eventdata, handles)
@@ -307,15 +305,6 @@ fclose(fid);
 
 h_=findobj('Tag','dt_value');
 
-%[ndt,vdt]=grp2idx(file1.data(:,1));
-%if numel(vdt) > 1; handles.dt=str2double(vdt(2));
-%else
-%    handles.dt=str2double(vdt(1))
-%end
-
-
-%set(h_,'String',handles.dt);
-
 handles.filename=FileName;
 
 handles.sm=0;
@@ -354,7 +343,6 @@ handles.column{num+1}='RateZero';
 eval(['handles.' handles.column{num+1} '= [1:1:length(file1.data(ll:nn,1))]''; '])
 
 % --> ele
-
 
 hv=get(handles.XLab(1),'Value');
 handles.TimeZero=cumsum(handles.Stamp);
@@ -552,26 +540,18 @@ handles.zoom=0;
 plotta_ora(handles);
 end
 
-
-%% --- Executes on calling function plotta_ora
-
+%% PLOT 
 function plotta_ora(handles)
 
 hOb=findobj('Tag','XLab');
 h_ele=get(hOb,'Value');
-
-if h_ele==2
-    handles.X=handles.Time/1000;
-elseif h_ele==3;
-    if any(strcmp(fieldnames(handles),'slip'))
-        handles.X=handles.slip;
-    elseif any(strcmp(fieldnames(handles),'Slip_Enc_2'))
-        handles.X=handles.Slip_Enc_2;
-    end
-elseif h_ele==1
-    handles.X=handles.Rate;
+if h_ele==2; handles.X=handles.Time./handles.tconv; 
+elseif h_ele==1; handles.X=handles.Rate;
+elseif h_ele==3 & any(strcmp(fieldnames(handles),'slip')); handles.X=handles.slip;
+elseif h_ele==3 & any(strcmp(fieldnames(handles),'slipF')); handles.X=handles.slipF;
+else handles.X=handles.Rate;
 end
-
+   
 
 
 stato=handles.zoom;
@@ -592,7 +572,6 @@ legend(handles.axes3,[handles.column{handles.g3}])
 lim3=get(handles.axes3,'Ylim'); a=findobj('Tag','lim3S'); set(a,'String',lim3(:,2)); b=findobj('Tag','lim3I'); set(b,'String',lim3(:,1));
 if (stato ==1) ; set(handles.axes3,'XLim',[posx]); end
 end
-
 
 % --------------------------------------------------------------------
 function PrintMenuItem_Callback(hObject, eventdata, handles)
@@ -616,17 +595,6 @@ end
 
 delete(handles.figure1)
 end
-
-
-% --- Executes on selection change in popupmenu1.
-function popupmenu1_Callback(hObject, eventdata, handles)
-% hObject    handle to popupmenu1 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-end
-
-% Hints: contents = get(hObject,'String') returns popupmenu1 contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from popupmenu1
 
 
 % --- Executes during object creation, after setting all properties.
@@ -657,51 +625,12 @@ h_ele=get(hObject,'Value');
 pippo=[handles.axes1, handles.axes2,handles.axes3];
 linkaxes(pippo,'x');
 
-
 if h_ele==1
     zoom on;
 else
     zoom off
 end
 end
-% %zoom xon;
-% h_=findobj('Tag','XLab');
-% stato=get(h_,'Value');
-% if stato==1
-% t_cut=handles.Time/1000;
-% else
-% t_cut=handles.XLab;
-% end
-%
-% [xi,yi]=ginput(2) ;
-%
-% mat(1,:)=abs(t_cut-ones(size(t_cut))*xi(1));
-% mat(2,:)=abs(t_cut-ones(size(t_cut))*xi(2));
-% ll(:,1)=find(mat(1,:)==min(mat(1,:)));
-% ll(:,2)=find(mat(2,:)==min(mat(2,:)));
-%
-% %for i=1:length(handles.column)
-%
-% %eval(['handles.', handles.column{i}, '=handles.' ...
-% %    handles.column{i}, '(ll(1,1):ll(1,2),1);'])
-% %end
-%
-% h_=findobj('Tag','XLab');
-% stato= get(h_,'Value') ;
-% if stato==1; set(h_,'String','time(s)'); handles.X=handles.Time/1000;
-% else
-% set(h_,'String','xlab'); handles.X= handles.XLab;  %se non voglio anche il xlab triggerato
-% end
-%
-% set(handles.axes1,'Xlim',[handles.X(ll(1,1)) handles.X(ll(1,2))]);
-% set(handles.axes2,'Xlim',[handles.X(ll(1,1)) handles.X(ll(1,2))]);
-% set(handles.axes3,'Xlim',[handles.X(ll(1,1)) handles.X(ll(1,2))]);
-% handles.zoom=1;
-%
-% guidata(hObject, handles);
-%
-% plotta_ora(handles)
-% linkaxes(pippo,'off');
 
 
 % --- Executes on button press in pan.
@@ -719,23 +648,6 @@ else
     pan off
 end
 end
-
-% h_=findobj('Tag','XLab');
-% stato= get(h_,'Value') ;
-% if stato==1
-%     set(h_,'String','time(s)')
-% handles.X=handles.Time/1000;
-% else
-% set(h_,'String','xlab')
-% handles.X= handles.XLab;  %se non voglio anche il xlab triggerato
-% end
-% set(handles.axes1,'XLim',[handles.X(1) handles.X(end)]);
-% set(handles.axes2,'XLim',[handles.X(1) handles.X(end)]);
-% set(handles.axes3,'XLim',[handles.X(1) handles.X(end)]);
-%
-% handles.zoom=0;
-% plotta_ora(handles)
-% guidata(hObject, handles);
 
 
 %% EDIT1
@@ -765,20 +677,7 @@ set(hObject,'String',handles.g1)
 
 hOb=findobj('Tag','XLab');
 h_ele=get(hOb,'Value');
-
-if h_ele==2
-    handles.X=handles.Time/1000;
-elseif h_ele==3;
-    if any(strcmp(fieldnames(handles),'slip'))
-        handles.X=handles.slip;
-    elseif any(strcmp(fieldnames(handles),'Slip_Enc_2'))
-        handles.X=handles.Slip_Enc_2;
-    end
-elseif h_ele==1
-    handles.X=handles.Rate;
-end
-
-
+handles.X=trovadataX(handles.axes1);
 eval(['plot(handles.X,handles.' handles.column{(handles.g1)} ',''ob'',''parent'',handles.axes1);']);
 legend(handles.axes1,[handles.column{handles.g1}])
 end
@@ -816,19 +715,7 @@ set(hObject,'String',handles.g2)
 
 hOb=findobj('Tag','XLab');
 h_ele=get(hOb,'Value');
-
-if h_ele==2
-    handles.X=handles.Time/1000;
-elseif h_ele==3;
-    if any(strcmp(fieldnames(handles),'slip'))
-        handles.X=handles.slip;
-    elseif any(strcmp(fieldnames(handles),'Slip_Enc_2'))
-        handles.X=handles.Slip_Enc_2;
-    end
-elseif h_ele==1
-    handles.X=handles.Rate;
-end
-
+handles.X=trovadataX(handles.axes1);
 
 eval(['plot(handles.X,handles.' handles.column{(handles.g2)} ',''ob'',''parent'',handles.axes2);']);
 legend(handles.axes2,[handles.column{handles.g2}])
@@ -871,21 +758,10 @@ end
 guidata(hObject, handles);
 set(hObject,'String',handles.g3)
 
-
 hOb=findobj('Tag','XLab');
 h_ele=get(hOb,'Value');
+handles.X=trovadataX(handles.axes1)
 
-if h_ele==2
-    handles.X=handles.Time/1000;
-elseif h_ele==3;
-    if any(strcmp(fieldnames(handles),'slip'))
-        handles.X=handles.slip;
-    elseif any(strcmp(fieldnames(handles),'Slip_Enc_2'))
-        handles.X=handles.Slip_Enc_2;
-    end
-elseif h_ele==1
-    handles.X=handles.Rate;
-end
 eval(['plot(handles.X,handles.' handles.column{(handles.g3)} ',''ob'',''parent'',handles.axes3);']);
 legend(handles.axes3,[handles.column{handles.g3}])
 end
@@ -919,20 +795,7 @@ function XLab_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of XLab
 
 h_ele=get(hObject,'Value')
-
-if h_ele==2
-    handles.X=handles.Time/1000;
-elseif h_ele==3;
-    if any(strcmp(fieldnames(handles),'slip'))
-        handles.X=handles.slip;
-    elseif any(strcmp(fieldnames(handles),'Slip_Enc_2'))
-        handles.X=handles.Slip_Enc_2;
-    else disp('not existent field Slip'); set(hObject,'Value',1);
-    end
-elseif h_ele==1
-    handles.X=handles.Rate;
-end
-
+handles.X=trovadataX(handles.axes1)
 
 guidata(hObject, handles);
 
@@ -956,25 +819,8 @@ h_=handles.column(sel);
 hOb=findobj('Tag','XLab');
 h_ele=get(hOb,'Value');
 htype=get(hOb,'String');
-
-if  contains(htype{h_ele},'Time')
-    t_cut=handles.Time/1000;
-elseif  contains(htype{h_ele},'Slip')
-    if any(strcmp(fieldnames(handles),'slip'))
-        t_cut=handles.slip;
-    elseif any(strcmp(fieldnames(handles),'Slip_Enc_2'))
-        t_cut=handles.Slip_Enc_2;
-    end
-elseif  contains(htype{h_ele},'Rate')
-    
-    t_cut=handles.Rate;
-end
-
-
-
 [xi,yi]=ginput(1) ;
-mat(1,:)=abs(t_cut-ones(size(t_cut))*xi(1));
-ll(:,1)=find(mat(1,:)==min(mat(1,:)));
+ll=trovaasse(handles.axes1,xi)
 
 ax_=get(gcf,'CurrentAxes');
 for n=1:3
@@ -1020,19 +866,7 @@ function trigger_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 hOb=findobj('Tag','XLab');
 h_ele=get(hOb,'Value');
-
-if h_ele==2
-    t_cut=handles.Time/1000;
-elseif h_ele==3
-    if any(strcmp(fieldnames(handles),'slip'))
-        t_cut=handles.slip;
-    elseif any(strcmp(fieldnames(handles),'Slip_Enc_2'))
-        t_cut=handles.Slip_Enc_2;
-    end
-elseif h_ele==1
-    t_cut=handles.XLab;
-end
-
+t_cut=trovadataX(handles.axes1);
 
 A=find(strcmp(fieldnames(handles),'shearT'));
 if isempty(A)
@@ -1207,7 +1041,6 @@ end
 end
 
 %% --- Executes on button press in cut_dt
-
 function cut_dt_Callback(hObject, eventdata, handles)
 % hObject    handle to cut_dt (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -1228,32 +1061,11 @@ for n=1:length(handles.column)
     eval(['handles.' handles.column{n} ' = handles.' handles.column{n} '(ll,1);'])
 end
 
-
-% ax_=get(handles.axes1,'Children'); dataY=get(ax_,'YData'); dataX=get(ax_,'XData');
-% set(ax_,'XData',dataX(ll),'YData',dataY(ll)); set(handles.axes1,'XLim',[dataX(ll(1)) dataX(ll(end))]);
-% ax_=get(handles.axes2,'Children'); dataY=get(ax_,'YData'); dataX=get(ax_,'XData');
-% set(ax_,'XData',dataX(ll),'YData',dataY(ll)); set(handles.axes2,'XLim',[dataX(ll(1)) dataX(ll(end))]);
-% ax_=get(handles.axes3,'Children'); dataY=get(ax_,'YData'); dataX=get(ax_,'XData');
-% set(ax_,'XData',dataX(ll),'YData',dataY(ll)); set(handles.axes3,'XLim',[dataX(ll(1)) dataX(ll(end))]);
-
-
 set(hObject,'String','cut_dt')
 guidata(hObject, handles);
 plotta_ora(handles)
 end
-
 % --- Executes during object creation, after setting all properties.
-function cut_dt_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to cut_dt (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-end
 
 
 
@@ -1264,22 +1076,10 @@ function cut_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 hOb=findobj('Tag','XLab');
 h_ele=get(hOb,'Value');
-
-if h_ele==2
-    t_cut=handles.Time/1000;
-elseif h_ele==3;
-    if any(strcmp(fieldnames(handles),'slip'))
-        t_cut=handles.slip;
-    elseif any(strcmp(fieldnames(handles),'Slip_Enc_2'))
-        t_cut=handles.Slip_Enc_2;
-    end
-elseif h_ele==1
-    t_cut=handles.XLab;
-end
+t_cut=trovadataX(handles.axes1);
 
 %left to right clicking sequence on plot
 [xi,yi]=ginput(2) ;
-
 
 mat(1,:)=abs(t_cut-ones(size(t_cut))*xi(1));
 mat(2,:)=abs(t_cut-ones(size(t_cut))*xi(2));
@@ -1298,8 +1098,6 @@ guidata(hObject, handles);
 plotta_ora(handles)
 end
 
-
-
 %% --- Executes on button press in fft.
 function fft_Callback(hObject, eventdata, handles)
 % hObject    handle to fft (see GCBO)
@@ -1307,23 +1105,10 @@ function fft_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 hOb=findobj('Tag','XLab');
 h_ele=get(hOb,'Value');
-
-if h_ele==2
-    t_cut=handles.Time/1000;
-elseif h_ele==3;
-    if any(strcmp(fieldnames(handles),'slip'))
-        t_cut=handles.slip;
-    elseif any(strcmp(fieldnames(handles),'Slip_Enc_2'))
-        t_cut=handles.Slip_Enc_2;
-    end
-elseif h_ele==1
-    t_cut=handles.XLab;
-end
-
+t_cut=trovadataX(handles.axes1);
 
 ax_=get(gcf,'CurrentAxes');
 
-%h_=findobj('Tag','dt_value');
 ginput(1)
 for n=1:3
     eval(['s=find(ax_==handles.axes' num2str(n) ');'])
@@ -1339,7 +1124,6 @@ I2=find(abs(t_cut-posx(2))==min(abs(t_cut-posx(2))));
 
 eval(['h_=findobj(''Tag'',''edit' num2str(n) ''');']); %n=numero asse
 s=str2double(get(h_,'String'));  %numero della colonna
-
 
 eval(['mmed_torq=mean(smooth(handles.' handles.column{s} '(1:100,:)));']);
 eval(['handles.' handles.column{s} '=handles.' handles.column{s} '- mmed_torq;']);
@@ -1362,78 +1146,7 @@ set(handles.axes5,'XLim',[0 500])
 
 set(hObject,'Value',0)
 end
-%eval(['plot(handles.Timestamp,handles.' handles.column{s} ...
-%    ',''ob'',''parent'',handles.axes' num2str(finestra) ');']);
-%eval(['legend(handles.axes' num2str(finestra) ...
-%    ',[handles.column{' num2str(s) '}])'])
-
-
-
-%% SAVE--------------------------------------------------------------------
-function save_Callback(hObject, eventdata, handles)
-% hObject    handle to save (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-pat0=pwd;
-[nome,pat]=uiputfile( ...
-    {'*.m;*.fig;*.mat;*.mdl', 'All MATLAB Files (*.m, *.fig, *.mat, *.mdl)'; ...
-    '*.*',                   'All Files (*.*)'}, ...
-    'Save as',[pat0 '/' handles.filename]);
-cd (pat)
-
-handles.save=handles.column;
-
-
-for j=1:length(handles.save)
-    if j==length(handles.save)
-        M(j,1)={['''' handles.save{j} '''']};
-    else
-        M(j,1)={['''' handles.save{j} '''' ',']};
-    end
-end
-M1=cell2mat(M');
-
-%for j=1:length(handles.column)
-%    if j==length(handles.column)
-%        O(j,1)={['''v' num2str(j) '''']};
-%    else
-%        O(j,1)={['''v' num2str(j) '''' ',']};
-%    end
-
-%    O1=cell2mat(O');
-%end
-
-%file header
-name4=['header', nome];
-%fid1 = fopen(name4,'wt');
-
-%fprintf(fid1,' load=%d\n shearT=%d\n trigger=%d\n cuttingfrom=%d to=%d\n dt=%f\n smooth=%d\n', ...
-%    handles.loadT, handles.shearT,handles.triggered,handles.cutted(1,1),handles.cutted(1,2),handles.dt,handles.sm);
-%fprintf(fid1,' load=%d\n shearT=%d\n trigger=%d\n cuttingfrom=%d to=%d\n dt=%f\n smooth=%d\n', ...
-%    handles.loadT, handles.shearT,handles.triggered,handles.dt,handles.sm);
-%fclose(fid1);
-
-nome2=[nome, 'RED.mat'];
-%nome3=['originali', nome];
-
-
-eval(['save(nome2,''-struct'',''handles'',' M1 ');'])
-end
-%eval(['save(nome3,''-struct'',''handles'',' O1 ');'])
-%save('parametri','-struct','handles','loadT','shearT','triggered','cutted'
-%,'dt','sm')
-
-
 % --------------------------------------------------------------------
-function File_Callback(hObject, eventdata, handles)
-% hObject    handle to File (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-end
-
-
-
-
 %% --------------------------------------------------------------------
 function Interactive_Callback(hObject, eventdata, handles)
 % hObject    handle to Interactive (see GCBO)
@@ -1443,8 +1156,6 @@ keyboard
 return
 end
 
-
-
 %% --- Executes on button press in calibration.
 function calibration_Callback(hObject, eventdata, handles)
 % hObject    handle to calibration (see GCBO)
@@ -1452,54 +1163,6 @@ function calibration_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 % I made another button to do this
 end
-
-
-%% definisce il diametro interno ed esterno
-function Rint_Callback(hObject, eventdata, handles)
-% hObject    handle to Rint (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-end
-
-% Hints: get(hObject,'String') returns contents of Rint as text
-%        str2double(get(hObject,'String')) returns contents of Rint as a double
-
-% --- Executes during object creation, after setting all properties.
-function Rint_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to Rint (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-end
-
-function Rext_Callback(hObject, eventdata, handles)
-% hObject    handle to Rext (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of Rext as text
-%        str2double(get(hObject,'String')) returns contents of Rext as a double
-end
-
-
-% --- Executes during object creation, after setting all properties.
-function Rext_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to Rext (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-end
-
 
 
 %% --- Executes on button press in Gefran.
@@ -1579,7 +1242,6 @@ end
 
 %%%%%%%%%%% fine GEF
 
-
 %% --- Executes on button press in running.
 function running_Callback(hObject, eventdata, handles)
 % hObject    handle to running (see GCBO)
@@ -1587,25 +1249,12 @@ function running_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 hOb=findobj('Tag','XLab');
 h_ele=get(hOb,'Value');
-
-if h_ele==2
-    t_cut=handles.Time/1000;
-elseif h_ele==3;
-    if any(strcmp(fieldnames(handles),'slip'))
-        t_cut=handles.slip;
-    elseif any(strcmp(fieldnames(handles),'Slip_Enc_2'))
-        t_cut=handles.Slip_Enc_2;
-    end
-elseif h_ele==1
-    t_cut=handles.Rate;
-end
-
+t_cut=trovadataX(handles.axes1)
 [xi,yi]=ginput(2) ;
 mat(1,:)=abs(t_cut-ones(size(t_cut))*xi(1));
 mat(2,:)=abs(t_cut-ones(size(t_cut))*xi(2));
 ll(:,1)=find(mat(1,:)==min(mat(1,:)));
 ll(:,2)=find(mat(2,:)==min(mat(2,:)));
-
 
 ax_=get(gcf,'CurrentAxes');
 for n=1:3
@@ -1629,19 +1278,14 @@ set(ax_,'Xlim',posx)
 guidata(hObject, handles);
 plotta_ora(handles)
 end
-
-
-% --- Executes on button press in fluid.
-function fluid_Callback(hObject, eventdata, handles)
-% hObject    handle to fluid (see GCBO)
+% --- Executes on selection change in popupmenu1.
+function popupmenu1_Callback(hObject, eventdata, handles)
+% hObject    handle to popupmenu1 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of fluid
 end
 
-
-% --------------------------------------------------------------------
+% PRINT---------------------------------------------------------
 function print_Callback(hObject, eventdata, handles)
 % hObject    handle to file (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -1661,15 +1305,6 @@ ah_=get(handles.axes3,'children'); nom=get(ah_,'DisplayName');
 hnl_=get(hn_,'YLabel'); set(hnl_,'string',nom)
 end
 
-%ax_=get(handles.axes1,'Parent');
-%ah_=get(ax_,'Children')
-%hf=figure;
-%for n=1:length(ah_)
-%eval(['h_new = copyobj(ah_(' num2str(n) '),hf);']);
-%end
-
-
-
 
 % --- Executes on button press in outlayers.
 function outlayers_Callback(hObject, eventdata, handles)
@@ -1680,18 +1315,7 @@ function outlayers_Callback(hObject, eventdata, handles)
 %zoom xon;
 hOb=findobj('Tag','XLab');
 h_ele=get(hOb,'Value');
-
-if h_ele==2
-    t_cut=handles.Time/1000;
-elseif h_ele==3;
-    if any(strcmp(fieldnames(handles),'slip'))
-        t_cut=handles.slip;
-    elseif any(strcmp(fieldnames(handles),'Slip_Enc_2'))
-        t_cut=handles.Slip_Enc_2;
-    end
-elseif h_ele==1
-    t_cut=handles.XLab;
-end
+t_cut=trovadataX(handles.axes1);
 
 button=1; i=0;
 while button==1
@@ -1699,7 +1323,6 @@ while button==1
     [xi(i),yi,button]=ginput(1) ;
     button
 end
-
 
 ax_=get(gcf,'CurrentAxes');
 for n=1:3
@@ -1722,8 +1345,7 @@ end
 if button==3
     
     for i=1:length(xi);
-        %running mean
-        
+    %running mean    
         if ll==1; eval(['handles.' handles.column{s} '(ll(i))=handles.' handles.column{s} '(ll(i)+1);']);
         else
             eval(['handles.' handles.column{s} '(ll(i))=handles.' handles.column{s} '(ll(i)-1);']);
@@ -1737,14 +1359,10 @@ elseif button==2
     
 end %if button
 
-
 guidata(hObject, handles);
 
 plotta_ora(handles)
 end
-
-
-
 
 % --- Executes on selection change in edit1LB.
 function edit1LB_Callback(hObject, eventdata, handles)
@@ -1766,24 +1384,6 @@ guidata(hObject, handles);
 plotta_ora(handles)
 end
 
-
-
-% --- Executes during object creation, after setting all properties.
-function edit1LB_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit1LB (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: popupmenu controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-end
-
-
-
-
 % --- Executes on selection change in edit2LB.
 function edit2LB_Callback(hObject, eventdata, handles)
 % hObject    handle to edit2LB (see GCBO)
@@ -1803,21 +1403,6 @@ guidata(hObject, handles);
 plotta_ora(handles)
 end
 
-
-% --- Executes during object creation, after setting all properties.
-function edit2LB_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit2LB (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: popupmenu controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-end
-
-
 % --- Executes on selection change in edit3LB.
 function edit3LB_Callback(hObject, eventdata, handles)
 % hObject    handle to edit3LB (see GCBO)
@@ -1836,33 +1421,6 @@ set(h,'String',s);
 guidata(hObject, handles);
 
 plotta_ora(handles)
-end
-
-
-
-% --- Executes during object creation, after setting all properties.
-function edit3LB_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit3LB (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: popupmenu controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-end
-
-
-
-
-
-
-% --------------------------------------------------------------------
-function Figure_Callback(hObject, eventdata, handles)
-% hObject    handle to Figure (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 end
 
 %% LOAD --------------------------------------------------------------------
@@ -1889,8 +1447,6 @@ I=strcmp(fieldnames(handles),'new'); if any(I); handles=rmfield(handles,'new'); 
 I=strcmp(fieldnames(handles),'X'); if any(I); handles=rmfield(handles,'X'); end
 I=strcmp(fieldnames(handles),'TimeZero'); if any(I); handles=rmfield(handles,'TimeZero'); end
 
-
-
 %definisce i grafici da plottare:
 %qui ci sono i default
 handles.g1=2;
@@ -1906,8 +1462,6 @@ h_=findobj('Tag','edit2LB'); set(h_,'String',1);
 h_=findobj('Tag','edit3LB'); set(h_,'String',1);
 
 
-
-
 [FileName,PathName] = uigetfile('*.*','All Files (*.*)', ...
     'C:\Users\Stefano\Dropbox\Ricerca\SHIVA');
 
@@ -1915,10 +1469,8 @@ cd (PathName)
 
 data=load(FileName);
 
-
 dataName=fieldnames(data);
 % if length(dataName); data=getfield(data,dataName{1}); end
-
 
 h_=findobj('Tag','dt_value');
 stato=get(h_,'Value');
@@ -1927,7 +1479,6 @@ if isempty(stato)
 else
     handles.dt=stato;
 end
-
 
 %set(h_,'String',handles.dt);
 
@@ -1947,7 +1498,6 @@ for i=1:length(handles.column)
     handles.(handles.column{i})=data.(handles.column{i}); %debuggato
     %     eval(['handles.' handles.column{i} '=data.' handles.column{i} ';'])
 end
-
 
 h_=findobj('Tag','edit1LB'); set(h_,'String',handles.column);
 h_=findobj('Tag','edit2LB'); set(h_,'String',handles.column);
@@ -1974,18 +1524,10 @@ guidata(hObject, new);
 
 handles.zoom=0;
 
-
-
 plotta_ora(handles);
 end
 
-
-
-
-
-
-%% BINARY
-% --------------------------------------------------------------------
+%% write BINARY --------------------------------------------------------------  
 function binary_Callback(hObject, eventdata, handles)
 % hObject    handle to binary (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -2054,41 +1596,6 @@ fclose(fid);
 if ~ strcmp(fieldnames(handles),'dt'); msgbox(['ATTENTION: handles.dt=none']); end
 end
 
-
-
-% --- Executes on button press in slipON.
-function slipON_Callback(hObject, eventdata, handles)
-% hObject    handle to slipON (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of slipON
-end
-
-
-
-% --- Executes on button press in GH.
-function GH_Callback(hObject, eventdata, handles)
-% hObject    handle to GH (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of GH
-
-end
-
-
-% --- Executes on button press in TC.
-function TC_Callback(hObject, eventdata, handles)
-% hObject    handle to TC (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of TC
-end
-
-
-
 %% SAVERED--------------------------------------------------------------------
 function saveRED_Callback(hObject, eventdata, handles)
 % hObject    handle to saveRED (see GCBO)
@@ -2140,26 +1647,191 @@ M1=cell2mat(M');
 
 %file header
 name4=['header', nome];
-%fid1 = fopen(name4,'wt');
-
-%fprintf(fid1,' load=%d\n shearT=%d\n trigger=%d\n cuttingfrom=%d to=%d\n dt=%f\n smooth=%d\n', ...
-%    handles.loadT, handles.shearT,handles.triggered,handles.cutted(1,1),handles.cutted(1,2),handles.dt,handles.sm);
-%fprintf(fid1,' load=%d\n shearT=%d\n trigger=%d\n cuttingfrom=%d to=%d\n dt=%f\n smooth=%d\n', ...
-%    handles.loadT, handles.shearT,handles.triggered,handles.dt,handles.sm);
-%fclose(fid1);
-
 nome2=[nome, '.mat'];
 %nome3=['originali', nome];
-
 
 eval(['save(nome2,''-struct'',''handles'',' M1 ');'])
 %eval(['save(nome3,''-struct'',''handles'',' O1 ');'])
 %save('parametri','-struct','handles','loadT','shearT','triggered','cutted'
 %,'dt','sm')
 end
+%% SAVE--------------------------------------------------------------------
+function save_Callback(hObject, eventdata, handles)
+% hObject    handle to save (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+pat0=pwd;
+[nome,pat]=uiputfile( ...
+    {'*.m;*.fig;*.mat;*.mdl', 'All MATLAB Files (*.m, *.fig, *.mat, *.mdl)'; ...
+    '*.*',                   'All Files (*.*)'}, ...
+    'Save as',[pat0 '/' handles.filename]);
+cd (pat)
+
+handles.save=handles.column;
 
 
+for j=1:length(handles.save)
+    if j==length(handles.save)
+        M(j,1)={['''' handles.save{j} '''']};
+    else
+        M(j,1)={['''' handles.save{j} '''' ',']};
+    end
+end
+M1=cell2mat(M');
 
+%for j=1:length(handles.column)
+%    if j==length(handles.column)
+%        O(j,1)={['''v' num2str(j) '''']};
+%    else
+%        O(j,1)={['''v' num2str(j) '''' ',']};
+%    end
+
+%    O1=cell2mat(O');
+%end
+
+%file header
+name4=['header', nome];
+
+nome2=[nome, 'RED.mat'];
+
+eval(['save(nome2,''-struct'',''handles'',' M1 ');'])
+end
+%eval(['save(nome3,''-struct'',''handles'',' O1 ');'])
+%save('parametri','-struct','handles','loadT','shearT','triggered','cutted'
+%,'dt','sm')
+
+%% obj Callback
+function cut_dt_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to cut_dt (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+end
+function File_Callback(hObject, eventdata, handles)
+% hObject    handle to File (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+end
+% definisce il diametro interno ed esterno
+function Rint_Callback(hObject, eventdata, handles)
+% hObject    handle to Rint (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+end
+% --- Executes during object creation, after setting all properties.
+function Rint_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Rint (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+end
+function Rext_Callback(hObject, eventdata, handles)
+% hObject    handle to Rext (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of Rext as text
+%        str2double(get(hObject,'String')) returns contents of Rext as a double
+end
+
+% --- Executes during object creation, after setting all properties.
+function Rext_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Rext (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+end
+
+% --- Executes on button press in fluid.
+function fluid_Callback(hObject, eventdata, handles)
+% hObject    handle to fluid (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of fluid
+end
+% --- Executes during object creation, after setting all properties.
+function edit1LB_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit1LB (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+end
+% --- Executes during object creation, after setting all properties.
+function edit2LB_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit2LB (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+end
+% --- Executes during object creation, after setting all properties.
+function edit3LB_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit3LB (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+end
+% --------------------------------------------------------------------
+function Figure_Callback(hObject, eventdata, handles)
+% hObject    handle to Figure (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+end
+% --- Executes on button press in slipON.
+function slipON_Callback(hObject, eventdata, handles)
+% hObject    handle to slipON (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of slipON
+end
+% --- Executes on button press in GH.
+function GH_Callback(hObject, eventdata, handles)
+% hObject    handle to GH (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of GH
+
+end
+% --- Executes on button press in TC.
+function TC_Callback(hObject, eventdata, handles)
+% hObject    handle to TC (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of TC
+end
 function nodeEnc1_Callback(hObject, eventdata, handles)
 % hObject    handle to nodeEnc1 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -2168,7 +1840,6 @@ function nodeEnc1_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'String') returns contents of nodeEnc1 as text
 %        str2double(get(hObject,'String')) returns contents of nodeEnc1 as a double
 end
-
 % --- Executes during object creation, after setting all properties.
 function nodeEnc1_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to nodeEnc1 (see GCBO)
@@ -2181,8 +1852,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 end
-
-
 function MaxEnc_Callback(hObject, eventdata, handles)
 % hObject    handle to MaxEnc (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -2191,7 +1860,6 @@ function MaxEnc_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'String') returns contents of MaxEnc as text
 %        str2double(get(hObject,'String')) returns contents of MaxEnc as a double
 end
-
 % --- Executes during object creation, after setting all properties.
 function MaxEnc_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to MaxEnc (see GCBO)
@@ -2204,8 +1872,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 end
-
-
 function nodeEnc2_Callback(hObject, eventdata, handles)
 % hObject    handle to nodeEnc2 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -2214,7 +1880,6 @@ function nodeEnc2_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'String') returns contents of nodeEnc2 as text
 %        str2double(get(hObject,'String')) returns contents of nodeEnc2 as a double
 end
-
 % --- Executes during object creation, after setting all properties.
 function nodeEnc2_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to nodeEnc2 (see GCBO)
@@ -2227,7 +1892,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 end
-
 function T0_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to edit13 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -2239,7 +1903,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 end
-
 function T0_Callback(hObject, eventdata, handles)
 % hObject    handle to TT (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -2248,7 +1911,6 @@ function T0_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'String') returns contents of TT as text
 %        str2double(get(hObject,'String')) returns contents of TT as a double
 end
-
 % --- Executes during object creation, after setting all properties.
 function TT_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to TT (see GCBO)
@@ -2261,7 +1923,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 end
-
 % --- Executes on button press in AdjRate.
 function AdjRate_Callback(hObject, eventdata, handles)
 % hObject    handle to AdjRate (see GCBO)
@@ -2270,7 +1931,6 @@ function AdjRate_Callback(hObject, eventdata, handles)
 
 % Hint: get(hObject,'Value') returns toggle state of AdjRate
 end
-
 % --- Executes on button press in Torque.
 function Torque_Callback(hObject, eventdata, handles)
 % hObject    handle to Torque (see GCBO)
@@ -2279,27 +1939,23 @@ function Torque_Callback(hObject, eventdata, handles)
 
 % Hint: get(hObject,'Value') returns toggle state of Torque
 end
-
 % --- Executes on button press in off_enc_0.
 function off_enc_0_Callback(hObject, eventdata, handles)
 % hObject    handle to off_enc_0 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-
 I=handles.triggered;
 handles.Encoder2(1:I)=0;
 handles.Encoder(1:I)=0;
 guidata(hObject, handles);
 end
-
 % --- Executes on button press in incremental.
 function incremental_Callback(hObject, eventdata, handles)
 % hObject    handle to incremental (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 end
-
 % --- Executes on button press in vac.
 function vac_Callback(hObject, eventdata, handles)
 % hObject    handle to vac (see GCBO)
@@ -2308,7 +1964,6 @@ function vac_Callback(hObject, eventdata, handles)
 
 % Hint: get(hObject,'Value') returns toggle state of vac
 end
-
 % --- Executes on button press in get_thickness.
 function get_thickness_Callback(hObject, eventdata, handles)
 % hObject    handle to get_thickness (see GCBO)
@@ -2317,8 +1972,6 @@ function get_thickness_Callback(hObject, eventdata, handles)
 
 % Hint: get(hObject,'Value') returns toggle state of get_thickness
 end
-
-
 function zero_thickness_long_Callback(hObject, eventdata, handles)
 % hObject    handle to zero_thickness_long (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -2327,7 +1980,6 @@ function zero_thickness_long_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'String') returns contents of zero_thickness_long as text
 %        str2double(get(hObject,'String')) returns contents of zero_thickness_long as a double
 end
-
 % --- Executes during object creation, after setting all properties.
 function zero_thickness_long_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to zero_thickness_long (see GCBO)
@@ -2340,29 +1992,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 end
-
-
-
-% hOb=findobj('Tag','XLab');
-% h_ele=get(hOb,'Value');
-%
-% if h_ele==2
-%    handles.X=handles.Time/1000;
-% elseif h_ele==3;
-%         if any(strcmp(fieldnames(handles),'slip'))
-%          handles.X=handles.slip;
-%         elseif any(strcmp(fieldnames(handles),'Slip_Enc_2'))
-%          handles.X=handles.Slip_Enc_2;
-%         end
-% elseif h_ele==1
-%          handles.X=handles.Rate;
-% end
-% eval(['plot(handles.X,handles.' handles.column{(handles.g3)} ',''ob'',''parent'',handles.axes3);']);
-% legend(handles.axes3,[handles.column{handles.g3}])
-
-% --- Executes during object creation, after setting all properties.
-
-
 % --- Executes on selection change in popupAI6.
 function popupAI6_Callback(hObject, eventdata, handles)
 % hObject    handle to popupAI6 (see GCBO)
@@ -2372,7 +2001,6 @@ function popupAI6_Callback(hObject, eventdata, handles)
 % Hints: contents = cellstr(get(hObject,'String')) returns popupAI6 contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from popupAI6
 end
-
 % --- Executes during object creation, after setting all properties.
 function popupAI6_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to popupAI6 (see GCBO)
@@ -2385,7 +2013,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 end
-
 % --- Executes on selection change in popupAI7.
 function popupAI7_Callback(hObject, eventdata, handles)
 % hObject    handle to popupAI7 (see GCBO)
@@ -2395,7 +2022,6 @@ function popupAI7_Callback(hObject, eventdata, handles)
 % Hints: contents = cellstr(get(hObject,'String')) returns popupAI7 contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from popupAI7
 end
-
 % --- Executes during object creation, after setting all properties.
 function popupAI7_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to popupAI7 (see GCBO)
@@ -2408,7 +2034,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 end
-
 % --- Executes on selection change in popupAI8.
 function popupAI8_Callback(hObject, eventdata, handles)
 % hObject    handle to popupAI8 (see GCBO)
@@ -2418,7 +2043,6 @@ function popupAI8_Callback(hObject, eventdata, handles)
 % Hints: contents = cellstr(get(hObject,'String')) returns popupAI8 contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from popupAI8
 end
-
 % --- Executes during object creation, after setting all properties.
 function popupAI8_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to popupAI8 (see GCBO)
@@ -2431,7 +2055,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 end
-
 % --- Executes on selection change in popupAI9.
 function popupAI9_Callback(hObject, eventdata, handles)
 % hObject    handle to popupAI9 (see GCBO)
@@ -2441,7 +2064,6 @@ function popupAI9_Callback(hObject, eventdata, handles)
 % Hints: contents = cellstr(get(hObject,'String')) returns popupAI9 contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from popupAI9
 end
-
 % --- Executes during object creation, after setting all properties.
 function popupAI9_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to popupAI9 (see GCBO)
@@ -2454,7 +2076,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 end
-
 % --- Executes on selection change in popupAI10.
 function popupAI10_Callback(hObject, eventdata, handles)
 % hObject    handle to popupAI10 (see GCBO)
@@ -2464,7 +2085,6 @@ function popupAI10_Callback(hObject, eventdata, handles)
 % Hints: contents = cellstr(get(hObject,'String')) returns popupAI10 contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from popupAI10
 end
-
 % --- Executes during object creation, after setting all properties.
 function popupAI10_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to popupAI10 (see GCBO)
@@ -2477,7 +2097,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 end
-
 % --- Executes on selection change in popupAI16.
 function popupAI16_Callback(hObject, eventdata, handles)
 % hObject    handle to popupAI16 (see GCBO)
@@ -2487,7 +2106,6 @@ function popupAI16_Callback(hObject, eventdata, handles)
 % Hints: contents = cellstr(get(hObject,'String')) returns popupAI16 contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from popupAI16
 end
-
 % --- Executes during object creation, after setting all properties.
 function popupAI16_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to popupAI16 (see GCBO)
@@ -2500,7 +2118,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 end
-
 % --- Executes on selection change in popupAI17.
 function popupAI17_Callback(hObject, eventdata, handles)
 % hObject    handle to popupAI17 (see GCBO)
@@ -2510,7 +2127,6 @@ function popupAI17_Callback(hObject, eventdata, handles)
 % Hints: contents = cellstr(get(hObject,'String')) returns popupAI17 contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from popupAI17
 end
-
 % --- Executes during object creation, after setting all properties.
 function popupAI17_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to popupAI17 (see GCBO)
@@ -2523,7 +2139,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 end
-
 % --- Executes on selection change in popupPF.
 function popupPF_Callback(hObject, eventdata, handles)
 % hObject    handle to popupPF (see GCBO)
@@ -2533,7 +2148,6 @@ function popupPF_Callback(hObject, eventdata, handles)
 % Hints: contents = cellstr(get(hObject,'String')) returns popupPF contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from popupPF
 end
-
 % --- Executes during object creation, after setting all properties.
 function popupPF_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to popupPF (see GCBO)
@@ -2546,7 +2160,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 end
-
 % --- Executes on selection change in popupAI18.
 function popupAI18_Callback(hObject, eventdata, handles)
 % hObject    handle to popupAI18 (see GCBO)
@@ -2556,7 +2169,6 @@ function popupAI18_Callback(hObject, eventdata, handles)
 % Hints: contents = cellstr(get(hObject,'String')) returns popupAI18 contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from popupAI18
 end
-
 % --- Executes during object creation, after setting all properties.
 function popupAI18_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to popupAI18 (see GCBO)
@@ -2569,7 +2181,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 end
-
 % --- Executes on selection change in popupPC.
 function popupPC_Callback(hObject, eventdata, handles)
 % hObject    handle to popupPC (see GCBO)
@@ -2579,7 +2190,6 @@ function popupPC_Callback(hObject, eventdata, handles)
 % Hints: contents = cellstr(get(hObject,'String')) returns popupPC contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from popupPC
 end
-
 % --- Executes during object creation, after setting all properties.
 function popupPC_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to popupPC (see GCBO)
@@ -2592,19 +2202,57 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 end
-
 % --- Executes when uipanel1 is resized.
 function uipanel1_ResizeFcn(hObject, eventdata, handles)
 % hObject    handle to uipanel1 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 end
+% --- Executes during object creation, after setting all properties.
+function brutalfilt_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to brutalfilt (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+end
+% --- Executes on button press in get_thickness_short.
+function get_thickness_short_Callback(hObject, eventdata, handles)
+% hObject    handle to get_thickness_short (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of get_thickness_short
+end
+function zero_thickness_short_Callback(hObject, eventdata, handles)
+% hObject    handle to zero_thickness_short (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of zero_thickness_short as text
+%        str2double(get(hObject,'String')) returns contents of zero_thickness_short as a double
+end
+% --- Executes during object creation, after setting all properties.
+function zero_thickness_short_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to zero_thickness_short (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'));
+    set(hObject,'BackgroundColor','white');
+end
+end
 
 %% refresh temperature callback
 % --- Executes on button press in pushbutton18.
 function pushbutton18_Callback(hObject, eventdata, handles)
 disp('Refresh temperature!')
-
 AIstate=zeros(1,18);
 for L=1:18
     obj=num2str(L); obj=strcat('popupAI',obj);
@@ -3558,10 +3206,7 @@ guidata(hObject, handles);
 plotta_ora(handles)
 end
 
-
-
-
-
+%% FIT
 function brutalfilt_Callback(hObject, eventdata, handles)
 % hObject    handle to brutalfilt (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -3613,61 +3258,61 @@ guidata(hObject, handles);
 plotta_ora(handles);
 
 end
-
-% --- Executes during object creation, after setting all properties.
-function brutalfilt_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to brutalfilt (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-end
-
-
-% --- Executes on button press in get_thickness_short.
-function get_thickness_short_Callback(hObject, eventdata, handles)
-% hObject    handle to get_thickness_short (see GCBO)
+% --- Executes on button press in filtvel.
+function filtvel_Callback(hObject, eventdata, handles)
+% hObject    handle to filtvel (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hint: get(hObject,'Value') returns toggle state of get_thickness_short
+% Hint: get(hObject,'Value') returns toggle state of filtvel
+%[handles.velF, handles.slipF]=finfilt(handles.Time, handles.slip);
+esi=0;
+sin='n';
+if any(strcmp(fieldnames(handles),'XIin'));
+    esi=1;
+    sin=input('vuoi cambiarlo? ','s');
+end
+    if sin=='y' | esi==0
+hf=figure; plot(handles.Slip_Enc_1); hold on; plot(handles.Slip_Enc_2);
+a=zoom; a.Enable='on'
+waitfor(a, 'Enable','off') 
+[XIin,YIin]=ginput(1);
+handles.XIin=XIin;
+close(hf)
+    end
+ya=handles.Slip_Enc_1(:,1);
+yb=handles.Slip_Enc_2(:,1);
+xt=handles.Time/1000;
+slip1=filtravel_shiva(ya, xt, 50,2); 
+slip2=filtravel_shiva(yb, xt, 5,2); 
+
+slip=slip1; slip(handles.XIin:end)=slip2(handles.XIin:end);
+figure; 
+plot(handles.SlipVel_Enc_1,'y'); hold on; plot(handles.SlipVel_Enc_2,'r');
+
+vel=diff(slip)./diff(xt); vel(end+1)=vel(end); 
+handles.velF=vel;
+handles.slipF=slip;
+plot(vel,'k');
+
+%handles.velF=filtravel_shiva(handles.vel,handles.Time, 25);
+%handles.slipF=filtravel_shiva(handles.slip,handles.Time, 25);
+
+if any(strcmp(handles.column,'velF'));
+else
+handles.column{end+1}='velF';
+handles.column{end+1}='slipF';
+end
+guidata(hObject, handles);
 end
 
-
-function zero_thickness_short_Callback(hObject, eventdata, handles)
-% hObject    handle to zero_thickness_short (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of zero_thickness_short as text
-%        str2double(get(hObject,'String')) returns contents of zero_thickness_short as a double
-end
-
-% --- Executes during object creation, after setting all properties.
-function zero_thickness_short_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to zero_thickness_short (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'));
-    set(hObject,'BackgroundColor','white');
-end
-end
-
-
-
+%% calculate gouge layer thickness
 % --- Executes on button press in refresh_thickness.
 function refresh_thickness_Callback(hObject, eventdata, handles)
 % hObject    handle to refresh_thickness (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-%% calculate gouge layer thickness
+
 cal.lv(1)=5.0634;
 cal.lv(2)=0.3;
 
@@ -3724,8 +3369,7 @@ handles.new=fieldnames(new)';
 guidata(hObject, handles);
 plotta_ora(handles)
 end
-
-
+%% generate unwrap
 % --- Executes on button press in pushbutton22.
 function pushbutton22_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton22 (see GCBO)
@@ -3751,4 +3395,20 @@ h_=findobj('Tag','edit3LB'); set(h_,'String',handles.column)
 handles.Done=1;
 guidata(hObject, handles);
 plotta_ora(handles)
+end
+%% funzioni di utilità
+
+function ll=trovaasse(asse,xi)
+
+Xax1=findobj(asse,'Type','line')
+t_cut=Xax1(1).XData;
+mat(1,:)=abs(t_cut-ones(size(t_cut))*xi(1));
+ll(:,1)=find(mat(1,:)==min(mat(1,:)));
+
+end
+
+function X=trovadataX(asse)
+
+h_ele1=findobj(asse,'Type','line'); 
+X=h_ele1(1).XData;
 end
